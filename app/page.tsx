@@ -748,7 +748,7 @@ export default function GuineaPigTapGame() {
   }
 
   const handleTap = () => {
-    const energyCost = 10
+    const energyCost = 1
     const carrotsReward = getCurrentCarrotsPerClick()
     if (energy >= energyCost) {
       setCarrots((prev) => prev + carrotsReward)
