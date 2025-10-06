@@ -365,9 +365,9 @@ const ALL_TASKS_POOL: Omit<Task, "progress" | "completed" | "claimed">[] = [
 ]
 
 export default function GuineaPigTapGame() {
-  const [carrots, setCarrots] = useState<number>(500000)
-  const [guineaTokens, setGuineaTokens] = useState<number>(100)
-  const [telegramStars, setTelegramStars] = useState<number>(1000)
+  const [carrots, setCarrots] = useState<number>(0)
+  const [guineaTokens, setGuineaTokens] = useState<number>(0)
+  const [telegramStars, setTelegramStars] = useState<number>(0)
   const [carrotsPerClickLevel, setCarrotsPerClickLevel] = useState<number>(1)
   const [maxEnergyLevel, setMaxEnergyLevel] = useState<number>(1)
   const [energy, setEnergy] = useState<number>(1000)
@@ -403,11 +403,11 @@ export default function GuineaPigTapGame() {
       level: 0,
       icon: "👶",
       levels: [
-        { lvl: 1, priceGT: 25, priceStars: 180, incomePerHour: 0.02 },
-        { lvl: 2, priceGT: 40, priceStars: 285, incomePerHour: 0.04 },
-        { lvl: 3, priceGT: 60, priceStars: 425, incomePerHour: 0.06 },
-        { lvl: 4, priceGT: 90, priceStars: 640, incomePerHour: 0.09 },
-        { lvl: 5, priceGT: 120, priceStars: 850, incomePerHour: 0.12 },
+        { lvl: 1, priceGT: 25, priceStars: 50, incomePerHour: 0.02 },
+        { lvl: 2, priceGT: 40, priceStars: 80, incomePerHour: 0.04 },
+        { lvl: 3, priceGT: 60, priceStars: 120, incomePerHour: 0.06 },
+        { lvl: 4, priceGT: 90, priceStars: 180, incomePerHour: 0.09 },
+        { lvl: 5, priceGT: 120, priceStars: 240, incomePerHour: 0.12 },
       ],
     },
     {
@@ -417,11 +417,11 @@ export default function GuineaPigTapGame() {
       level: 0,
       icon: "🥕",
       levels: [
-        { lvl: 1, priceGT: 50, priceStars: 355, incomePerHour: 0.05 },
-        { lvl: 2, priceGT: 70, priceStars: 500, incomePerHour: 0.08 },
-        { lvl: 3, priceGT: 100, priceStars: 710, incomePerHour: 0.12 },
-        { lvl: 4, priceGT: 150, priceStars: 1065, incomePerHour: 0.18 },
-        { lvl: 5, priceGT: 200, priceStars: 1420, incomePerHour: 0.25 },
+        { lvl: 1, priceGT: 50, priceStars: 100, incomePerHour: 0.05 },
+        { lvl: 2, priceGT: 70, priceStars: 140, incomePerHour: 0.08 },
+        { lvl: 3, priceGT: 100, priceStars: 200, incomePerHour: 0.12 },
+        { lvl: 4, priceGT: 150, priceStars: 300, incomePerHour: 0.18 },
+        { lvl: 5, priceGT: 200, priceStars: 400, incomePerHour: 0.25 },
       ],
     },
     {
@@ -431,11 +431,11 @@ export default function GuineaPigTapGame() {
       level: 0,
       icon: "🚜",
       levels: [
-        { lvl: 1, priceGT: 100, priceStars: 710, incomePerHour: 0.15 },
-        { lvl: 2, priceGT: 150, priceStars: 1065, incomePerHour: 0.25 },
-        { lvl: 3, priceGT: 220, priceStars: 1565, incomePerHour: 0.38 },
-        { lvl: 4, priceGT: 320, priceStars: 2275, incomePerHour: 0.55 },
-        { lvl: 5, priceGT: 450, priceStars: 3195, incomePerHour: 0.75 },
+        { lvl: 1, priceGT: 100, priceStars: 200, incomePerHour: 0.15 },
+        { lvl: 2, priceGT: 150, priceStars: 300, incomePerHour: 0.25 },
+        { lvl: 3, priceGT: 220, priceStars: 440, incomePerHour: 0.38 },
+        { lvl: 4, priceGT: 320, priceStars: 640, incomePerHour: 0.55 },
+        { lvl: 5, priceGT: 450, priceStars: 900, incomePerHour: 0.75 },
       ],
     },
     {
@@ -445,11 +445,11 @@ export default function GuineaPigTapGame() {
       level: 0,
       icon: "🏠",
       levels: [
-        { lvl: 1, priceGT: 80, priceStars: 570, incomePerHour: 0.1 },
-        { lvl: 2, priceGT: 120, priceStars: 855, incomePerHour: 0.18 },
-        { lvl: 3, priceGT: 180, priceStars: 1280, incomePerHour: 0.28 },
-        { lvl: 4, priceGT: 270, priceStars: 1920, incomePerHour: 0.4 },
-        { lvl: 5, priceGT: 350, priceStars: 2485, incomePerHour: 0.5 },
+        { lvl: 1, priceGT: 80, priceStars: 160, incomePerHour: 0.1 },
+        { lvl: 2, priceGT: 120, priceStars: 240, incomePerHour: 0.18 },
+        { lvl: 3, priceGT: 180, priceStars: 360, incomePerHour: 0.28 },
+        { lvl: 4, priceGT: 270, priceStars: 540, incomePerHour: 0.4 },
+        { lvl: 5, priceGT: 350, priceStars: 700, incomePerHour: 0.5 },
       ],
     },
     {
@@ -459,11 +459,11 @@ export default function GuineaPigTapGame() {
       level: 0,
       icon: "💎",
       levels: [
-        { lvl: 1, priceGT: 200, priceStars: 1420, incomePerHour: 0.3 },
-        { lvl: 2, priceGT: 300, priceStars: 2130, incomePerHour: 0.5 },
-        { lvl: 3, priceGT: 450, priceStars: 3195, incomePerHour: 0.75 },
-        { lvl: 4, priceGT: 650, priceStars: 4615, incomePerHour: 1.1 },
-        { lvl: 5, priceGT: 900, priceStars: 6390, incomePerHour: 1.5 },
+        { lvl: 1, priceGT: 200, priceStars: 400, incomePerHour: 0.3 },
+        { lvl: 2, priceGT: 300, priceStars: 600, incomePerHour: 0.5 },
+        { lvl: 3, priceGT: 450, priceStars: 900, incomePerHour: 0.75 },
+        { lvl: 4, priceGT: 650, priceStars: 1300, incomePerHour: 1.1 },
+        { lvl: 5, priceGT: 900, priceStars: 1800, incomePerHour: 1.5 },
       ],
     },
     {
@@ -473,11 +473,11 @@ export default function GuineaPigTapGame() {
       level: 0,
       icon: "💾",
       levels: [
-        { lvl: 1, priceGT: 150, priceStars: 1065, incomePerHour: 0.2 },
-        { lvl: 2, priceGT: 225, priceStars: 1600, incomePerHour: 0.35 },
-        { lvl: 3, priceGT: 340, priceStars: 2415, incomePerHour: 0.55 },
-        { lvl: 4, priceGT: 480, priceStars: 3410, incomePerHour: 0.8 },
-        { lvl: 5, priceGT: 600, priceStars: 4260, incomePerHour: 1.0 },
+        { lvl: 1, priceGT: 150, priceStars: 300, incomePerHour: 0.2 },
+        { lvl: 2, priceGT: 225, priceStars: 450, incomePerHour: 0.35 },
+        { lvl: 3, priceGT: 340, priceStars: 680, incomePerHour: 0.55 },
+        { lvl: 4, priceGT: 480, priceStars: 960, incomePerHour: 0.8 },
+        { lvl: 5, priceGT: 600, priceStars: 1200, incomePerHour: 1.0 },
       ],
     },
     {
@@ -487,11 +487,11 @@ export default function GuineaPigTapGame() {
       level: 0,
       icon: "⚛️",
       levels: [
-        { lvl: 1, priceGT: 350, priceStars: 2485, incomePerHour: 0.6 },
-        { lvl: 2, priceGT: 525, priceStars: 3730, incomePerHour: 1.0 },
-        { lvl: 3, priceGT: 800, priceStars: 5680, incomePerHour: 1.5 },
-        { lvl: 4, priceGT: 1200, priceStars: 8520, incomePerHour: 2.2 },
-        { lvl: 5, priceGT: 1700, priceStars: 12070, incomePerHour: 3.0 },
+        { lvl: 1, priceGT: 350, priceStars: 700, incomePerHour: 0.6 },
+        { lvl: 2, priceGT: 525, priceStars: 1050, incomePerHour: 1.0 },
+        { lvl: 3, priceGT: 800, priceStars: 1600, incomePerHour: 1.5 },
+        { lvl: 4, priceGT: 1200, priceStars: 2400, incomePerHour: 2.2 },
+        { lvl: 5, priceGT: 1700, priceStars: 3400, incomePerHour: 3.0 },
       ],
     },
     {
@@ -501,11 +501,11 @@ export default function GuineaPigTapGame() {
       level: 0,
       icon: "🌌",
       levels: [
-        { lvl: 1, priceGT: 500, priceStars: 3550, incomePerHour: 1.0 },
-        { lvl: 2, priceGT: 750, priceStars: 5325, incomePerHour: 1.7 },
-        { lvl: 3, priceGT: 1100, priceStars: 7810, incomePerHour: 2.5 },
-        { lvl: 4, priceGT: 1650, priceStars: 11715, incomePerHour: 3.5 },
-        { lvl: 5, priceGT: 2300, priceStars: 16330, incomePerHour: 5.0 },
+        { lvl: 1, priceGT: 500, priceStars: 1000, incomePerHour: 1.0 },
+        { lvl: 2, priceGT: 750, priceStars: 1500, incomePerHour: 1.7 },
+        { lvl: 3, priceGT: 1100, priceStars: 2200, incomePerHour: 2.5 },
+        { lvl: 4, priceGT: 1650, priceStars: 3300, incomePerHour: 3.5 },
+        { lvl: 5, priceGT: 2300, priceStars: 4600, incomePerHour: 5.0 },
       ],
     },
   ])
@@ -558,9 +558,9 @@ export default function GuineaPigTapGame() {
         const savedData = localStorage.getItem("guineaPigGameData")
         if (savedData) {
           const data = window.JSON ? window.JSON.parse(savedData) : JSON.parse(savedData)
-          setCarrots(data.carrots || 500000)
-          setGuineaTokens(data.guineaTokens || 100)
-          setTelegramStars(data.telegramStars || 1000)
+          setCarrots(data.carrots || 0)
+          setGuineaTokens(data.guineaTokens || 0)
+          setTelegramStars(data.telegramStars || 0)
           setCarrotsPerClickLevel(data.carrotsPerClickLevel || 1)
           setMaxEnergyLevel(data.maxEnergyLevel || 1)
           setEnergy(data.energy || 1000)
