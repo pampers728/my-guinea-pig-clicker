@@ -21,7 +21,11 @@ import {
   Youtube,
   Music,
   Info,
+  ShoppingCart,
+  Crown,
+  Wallet,
 } from "lucide-react"
+import { TonConnect } from "@tonconnect/sdk"
 
 interface TaskReward {
   carrots: number
@@ -79,6 +83,13 @@ interface Friend {
   id: string
   name: string
   bonus: number
+}
+
+interface LeaderboardPlayer {
+  rank: number
+  username: string
+  score: number
+  avatar: string
 }
 
 const ALL_TASKS_POOL: Omit<Task, "progress" | "completed" | "claimed">[] = [
@@ -375,6 +386,8 @@ export default function GuineaPigTapGame() {
   const [referralCode, setReferralCode] = useState<string>("")
   const [showSupportModal, setShowSupportModal] = useState<boolean>(false)
   const [showConvertModal, setShowConvertModal] = useState<boolean>(false)
+  const [showCryptoPaymentModal, setShowCryptoPaymentModal] = useState<boolean>(false)
+  const [leaderboardPeriod, setLeaderboardPeriod] = useState<"daily" | "weekly" | "alltime">("daily")
   const [miningSecondsLeft, setMiningSecondsLeft] = useState<number>(60)
   const [lastMiningTime, setLastMiningTime] = useState<number>(Date.now())
   const [taskProgress, setTaskProgress] = useState<TaskProgress>({
@@ -403,11 +416,11 @@ export default function GuineaPigTapGame() {
       level: 0,
       icon: "👶",
       levels: [
-        { lvl: 1, priceGT: 25, priceStars: 50, incomePerHour: 0.02 },
-        { lvl: 2, priceGT: 40, priceStars: 80, incomePerHour: 0.04 },
-        { lvl: 3, priceGT: 60, priceStars: 120, incomePerHour: 0.06 },
-        { lvl: 4, priceGT: 90, priceStars: 180, incomePerHour: 0.09 },
-        { lvl: 5, priceGT: 120, priceStars: 240, incomePerHour: 0.12 },
+        { lvl: 1, priceGT: 25, priceStars: 50, incomePerHour: 0.002 },
+        { lvl: 2, priceGT: 40, priceStars: 80, incomePerHour: 0.004 },
+        { lvl: 3, priceGT: 60, priceStars: 120, incomePerHour: 0.006 },
+        { lvl: 4, priceGT: 90, priceStars: 180, incomePerHour: 0.009 },
+        { lvl: 5, priceGT: 120, priceStars: 240, incomePerHour: 0.012 },
       ],
     },
     {
@@ -417,11 +430,11 @@ export default function GuineaPigTapGame() {
       level: 0,
       icon: "🥕",
       levels: [
-        { lvl: 1, priceGT: 50, priceStars: 100, incomePerHour: 0.05 },
-        { lvl: 2, priceGT: 70, priceStars: 140, incomePerHour: 0.08 },
-        { lvl: 3, priceGT: 100, priceStars: 200, incomePerHour: 0.12 },
-        { lvl: 4, priceGT: 150, priceStars: 300, incomePerHour: 0.18 },
-        { lvl: 5, priceGT: 200, priceStars: 400, incomePerHour: 0.25 },
+        { lvl: 1, priceGT: 50, priceStars: 100, incomePerHour: 0.005 },
+        { lvl: 2, priceGT: 70, priceStars: 140, incomePerHour: 0.008 },
+        { lvl: 3, priceGT: 100, priceStars: 200, incomePerHour: 0.012 },
+        { lvl: 4, priceGT: 150, priceStars: 300, incomePerHour: 0.018 },
+        { lvl: 5, priceGT: 200, priceStars: 400, incomePerHour: 0.025 },
       ],
     },
     {
@@ -431,11 +444,11 @@ export default function GuineaPigTapGame() {
       level: 0,
       icon: "🚜",
       levels: [
-        { lvl: 1, priceGT: 100, priceStars: 200, incomePerHour: 0.15 },
-        { lvl: 2, priceGT: 150, priceStars: 300, incomePerHour: 0.25 },
-        { lvl: 3, priceGT: 220, priceStars: 440, incomePerHour: 0.38 },
-        { lvl: 4, priceGT: 320, priceStars: 640, incomePerHour: 0.55 },
-        { lvl: 5, priceGT: 450, priceStars: 900, incomePerHour: 0.75 },
+        { lvl: 1, priceGT: 100, priceStars: 200, incomePerHour: 0.015 },
+        { lvl: 2, priceGT: 150, priceStars: 300, incomePerHour: 0.025 },
+        { lvl: 3, priceGT: 220, priceStars: 440, incomePerHour: 0.038 },
+        { lvl: 4, priceGT: 320, priceStars: 640, incomePerHour: 0.055 },
+        { lvl: 5, priceGT: 450, priceStars: 900, incomePerHour: 0.075 },
       ],
     },
     {
@@ -445,11 +458,11 @@ export default function GuineaPigTapGame() {
       level: 0,
       icon: "🏠",
       levels: [
-        { lvl: 1, priceGT: 80, priceStars: 160, incomePerHour: 0.1 },
-        { lvl: 2, priceGT: 120, priceStars: 240, incomePerHour: 0.18 },
-        { lvl: 3, priceGT: 180, priceStars: 360, incomePerHour: 0.28 },
-        { lvl: 4, priceGT: 270, priceStars: 540, incomePerHour: 0.4 },
-        { lvl: 5, priceGT: 350, priceStars: 700, incomePerHour: 0.5 },
+        { lvl: 1, priceGT: 80, priceStars: 160, incomePerHour: 0.01 },
+        { lvl: 2, priceGT: 120, priceStars: 240, incomePerHour: 0.018 },
+        { lvl: 3, priceGT: 180, priceStars: 360, incomePerHour: 0.028 },
+        { lvl: 4, priceGT: 270, priceStars: 540, incomePerHour: 0.04 },
+        { lvl: 5, priceGT: 350, priceStars: 700, incomePerHour: 0.05 },
       ],
     },
     {
@@ -459,11 +472,11 @@ export default function GuineaPigTapGame() {
       level: 0,
       icon: "💎",
       levels: [
-        { lvl: 1, priceGT: 200, priceStars: 400, incomePerHour: 0.3 },
-        { lvl: 2, priceGT: 300, priceStars: 600, incomePerHour: 0.5 },
-        { lvl: 3, priceGT: 450, priceStars: 900, incomePerHour: 0.75 },
-        { lvl: 4, priceGT: 650, priceStars: 1300, incomePerHour: 1.1 },
-        { lvl: 5, priceGT: 900, priceStars: 1800, incomePerHour: 1.5 },
+        { lvl: 1, priceGT: 200, priceStars: 400, incomePerHour: 0.03 },
+        { lvl: 2, priceGT: 300, priceStars: 600, incomePerHour: 0.05 },
+        { lvl: 3, priceGT: 450, priceStars: 900, incomePerHour: 0.075 },
+        { lvl: 4, priceGT: 650, priceStars: 1300, incomePerHour: 0.11 },
+        { lvl: 5, priceGT: 900, priceStars: 1800, incomePerHour: 0.15 },
       ],
     },
     {
@@ -473,11 +486,11 @@ export default function GuineaPigTapGame() {
       level: 0,
       icon: "💾",
       levels: [
-        { lvl: 1, priceGT: 150, priceStars: 300, incomePerHour: 0.2 },
-        { lvl: 2, priceGT: 225, priceStars: 450, incomePerHour: 0.35 },
-        { lvl: 3, priceGT: 340, priceStars: 680, incomePerHour: 0.55 },
-        { lvl: 4, priceGT: 480, priceStars: 960, incomePerHour: 0.8 },
-        { lvl: 5, priceGT: 600, priceStars: 1200, incomePerHour: 1.0 },
+        { lvl: 1, priceGT: 150, priceStars: 300, incomePerHour: 0.02 },
+        { lvl: 2, priceGT: 225, priceStars: 450, incomePerHour: 0.035 },
+        { lvl: 3, priceGT: 340, priceStars: 680, incomePerHour: 0.055 },
+        { lvl: 4, priceGT: 480, priceStars: 960, incomePerHour: 0.08 },
+        { lvl: 5, priceGT: 600, priceStars: 1200, incomePerHour: 0.1 },
       ],
     },
     {
@@ -487,11 +500,11 @@ export default function GuineaPigTapGame() {
       level: 0,
       icon: "⚛️",
       levels: [
-        { lvl: 1, priceGT: 350, priceStars: 700, incomePerHour: 0.6 },
-        { lvl: 2, priceGT: 525, priceStars: 1050, incomePerHour: 1.0 },
-        { lvl: 3, priceGT: 800, priceStars: 1600, incomePerHour: 1.5 },
-        { lvl: 4, priceGT: 1200, priceStars: 2400, incomePerHour: 2.2 },
-        { lvl: 5, priceGT: 1700, priceStars: 3400, incomePerHour: 3.0 },
+        { lvl: 1, priceGT: 350, priceStars: 700, incomePerHour: 0.06 },
+        { lvl: 2, priceGT: 525, priceStars: 1050, incomePerHour: 0.1 },
+        { lvl: 3, priceGT: 800, priceStars: 1600, incomePerHour: 0.15 },
+        { lvl: 4, priceGT: 1200, priceStars: 2400, incomePerHour: 0.22 },
+        { lvl: 5, priceGT: 1700, priceStars: 3400, incomePerHour: 0.3 },
       ],
     },
     {
@@ -501,17 +514,104 @@ export default function GuineaPigTapGame() {
       level: 0,
       icon: "🌌",
       levels: [
-        { lvl: 1, priceGT: 500, priceStars: 1000, incomePerHour: 1.0 },
-        { lvl: 2, priceGT: 750, priceStars: 1500, incomePerHour: 1.7 },
-        { lvl: 3, priceGT: 1100, priceStars: 2200, incomePerHour: 2.5 },
-        { lvl: 4, priceGT: 1650, priceStars: 3300, incomePerHour: 3.5 },
-        { lvl: 5, priceGT: 2300, priceStars: 4600, incomePerHour: 5.0 },
+        { lvl: 1, priceGT: 500, priceStars: 1000, incomePerHour: 0.1 },
+        { lvl: 2, priceGT: 750, priceStars: 1500, incomePerHour: 0.17 },
+        { lvl: 3, priceGT: 1100, priceStars: 2200, incomePerHour: 0.25 },
+        { lvl: 4, priceGT: 1650, priceStars: 3300, incomePerHour: 0.35 },
+        { lvl: 5, priceGT: 2300, priceStars: 4600, incomePerHour: 0.5 },
+      ],
+    },
+    {
+      id: "ai_miner",
+      name: "AI Miner",
+      type: "ai",
+      level: 0,
+      icon: "🤖",
+      levels: [
+        { lvl: 1, priceGT: 800, priceStars: 1600, incomePerHour: 0.15 },
+        { lvl: 2, priceGT: 1200, priceStars: 2400, incomePerHour: 0.25 },
+        { lvl: 3, priceGT: 1800, priceStars: 3600, incomePerHour: 0.4 },
+        { lvl: 4, priceGT: 2700, priceStars: 5400, incomePerHour: 0.6 },
+        { lvl: 5, priceGT: 3800, priceStars: 7600, incomePerHour: 0.85 },
+      ],
+    },
+    {
+      id: "golden_reactor",
+      name: "Golden Reactor",
+      type: "energy",
+      level: 0,
+      icon: "⚡",
+      levels: [
+        { lvl: 1, priceGT: 1000, priceStars: 2000, incomePerHour: 0.2 },
+        { lvl: 2, priceGT: 1500, priceStars: 3000, incomePerHour: 0.35 },
+        { lvl: 3, priceGT: 2250, priceStars: 4500, incomePerHour: 0.55 },
+        { lvl: 4, priceGT: 3400, priceStars: 6800, incomePerHour: 0.8 },
+        { lvl: 5, priceGT: 4800, priceStars: 9600, incomePerHour: 1.1 },
+      ],
+    },
+    {
+      id: "afb_industry",
+      name: "AFB Industry",
+      type: "industrial",
+      level: 0,
+      icon: "🏭",
+      levels: [
+        { lvl: 1, priceGT: 1500, priceStars: 3000, incomePerHour: 0.3 },
+        { lvl: 2, priceGT: 2250, priceStars: 4500, incomePerHour: 0.5 },
+        { lvl: 3, priceGT: 3400, priceStars: 6800, incomePerHour: 0.75 },
+        { lvl: 4, priceGT: 5000, priceStars: 10000, incomePerHour: 1.1 },
+        { lvl: 5, priceGT: 7000, priceStars: 14000, incomePerHour: 1.5 },
+      ],
+    },
+    {
+      id: "inferno_core",
+      name: "Inferno Core",
+      type: "epic",
+      level: 0,
+      icon: "🔥",
+      levels: [
+        { lvl: 1, priceGT: 2000, priceStars: 4000, incomePerHour: 0.4 },
+        { lvl: 2, priceGT: 3000, priceStars: 6000, incomePerHour: 0.7 },
+        { lvl: 3, priceGT: 4500, priceStars: 9000, incomePerHour: 1.0 },
+        { lvl: 4, priceGT: 6500, priceStars: 13000, incomePerHour: 1.5 },
+        { lvl: 5, priceGT: 9000, priceStars: 18000, incomePerHour: 2.0 },
+      ],
+    },
+    {
+      id: "quantum_singularity",
+      name: "Quantum Singularity",
+      type: "legendary",
+      level: 0,
+      icon: "🌟",
+      levels: [
+        { lvl: 1, priceGT: 5000, priceStars: 10000, incomePerHour: 0.6 },
+        { lvl: 2, priceGT: 5750, priceStars: 11500, incomePerHour: 1.0 },
+        { lvl: 3, priceGT: 6500, priceStars: 13000, incomePerHour: 1.5 },
+        { lvl: 4, priceGT: 7250, priceStars: 14500, incomePerHour: 2.2 },
+        { lvl: 5, priceGT: 7500, priceStars: 15000, incomePerHour: 3.0 },
       ],
     },
   ])
   const [weeklyTasks, setWeeklyTasks] = useState<Task[]>([])
   const [lastTaskRotation, setLastTaskRotation] = useState<number>(Date.now())
   const [friends, setFriends] = useState<Friend[]>([])
+  const [leaderboardData, setLeaderboardData] = useState<{
+    daily: LeaderboardPlayer[]
+    weekly: LeaderboardPlayer[]
+    alltime: LeaderboardPlayer[]
+  }>({
+    daily: [],
+    weekly: [],
+    alltime: [],
+  })
+
+  const [tonWallet, setTonWallet] = useState<any>(null)
+  const [tonConnector, setTonConnector] = useState<TonConnect | null>(null)
+  const [tonPaymentStatus, setTonPaymentStatus] = useState<string>("")
+
+  const [authToken, setAuthToken] = useState<string | null>(null)
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
+  const [telegramUser, setTelegramUser] = useState<any>(null)
 
   const selectRandomTasks = (): Task[] => {
     const shuffled = [...ALL_TASKS_POOL].sort(() => Math.random() - 0.5)
@@ -555,6 +655,13 @@ export default function GuineaPigTapGame() {
   useEffect(() => {
     const loadGameData = () => {
       try {
+        // Load auth token from local storage
+        const savedToken = localStorage.getItem("authToken")
+        if (savedToken) {
+          setAuthToken(savedToken)
+          setIsAuthenticated(true)
+        }
+
         const savedData = localStorage.getItem("guineaPigGameData")
         if (savedData) {
           const data = window.JSON ? window.JSON.parse(savedData) : JSON.parse(savedData)
@@ -570,7 +677,6 @@ export default function GuineaPigTapGame() {
           if (data.taskProgress) setTaskProgress(data.taskProgress)
           if (data.lastTaskRotation) setLastTaskRotation(data.lastTaskRotation)
           if (data.lastMiningTime) setLastMiningTime(data.lastMiningTime)
-          console.log("[v0] Game data loaded successfully")
         }
 
         const parsedData = savedData ? (window.JSON ? window.JSON.parse(savedData) : JSON.parse(savedData)) : null
@@ -578,7 +684,6 @@ export default function GuineaPigTapGame() {
           const initialTasks = selectRandomTasks()
           setWeeklyTasks(initialTasks)
           setLastTaskRotation(Date.now())
-          console.log("[v0] Initial weekly tasks created")
         }
 
         const savedReferralCode = localStorage.getItem("userReferralCode")
@@ -595,7 +700,15 @@ export default function GuineaPigTapGame() {
     }
     loadGameData()
     checkAndRotateTasks()
+    authenticateUser()
   }, [])
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const syncInterval = setInterval(syncDataWithServer, 30000)
+      return () => clearInterval(syncInterval)
+    }
+  }, [isAuthenticated, authToken, carrots, guineaTokens, telegramStars, miners, taskProgress, weeklyTasks])
 
   useEffect(() => {
     const interval = setInterval(
@@ -627,7 +740,6 @@ export default function GuineaPigTapGame() {
         }
         const jsonString = window.JSON ? window.JSON.stringify(gameData) : JSON.stringify(gameData)
         localStorage.setItem("guineaPigGameData", jsonString)
-        console.log("[v0] Game data saved successfully")
       } catch (error) {
         console.error("[v0] Error saving game data:", error)
       }
@@ -648,6 +760,133 @@ export default function GuineaPigTapGame() {
     lastTaskRotation,
     lastMiningTime,
   ])
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const connector = new TonConnect({
+        manifestUrl: "https://my-guinea-pig-clicker.vercel.app/tonconnect-manifest.json",
+      })
+      setTonConnector(connector)
+
+      connector.restoreConnection().then((wallet) => {
+        if (wallet) {
+          setTonWallet(wallet)
+          console.log("[v0] TON wallet connected:", wallet)
+        }
+      })
+    }
+  }, [])
+
+  const authenticateUser = async () => {
+    try {
+      if (typeof window !== "undefined" && (window as any).Telegram?.WebApp) {
+        const tg = (window as any).Telegram.WebApp
+        const user = tg.initDataUnsafe?.user
+
+        if (user) {
+          setTelegramUser(user)
+
+          const response = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              telegramId: user.id,
+              username: user.username || `user${user.id}`,
+              firstName: user.first_name || "",
+              lastName: user.last_name || "",
+              photoUrl: user.photo_url || "",
+            }),
+          })
+
+          const data = await response.json()
+
+          if (response.status === 503) {
+            console.warn("[v0] Database not configured - playing in offline mode")
+            setIsAuthenticated(false)
+            return
+          }
+
+          if (data.success && data.token) {
+            setAuthToken(data.token)
+            setIsAuthenticated(true)
+            localStorage.setItem("authToken", data.token)
+            console.log("[v0] User authenticated:", data.user)
+          }
+        }
+      }
+    } catch (error) {
+      console.error("[v0] Authentication error:", error)
+      setIsAuthenticated(false)
+    }
+  }
+
+  const syncDataWithServer = async () => {
+    if (!authToken || !isAuthenticated) return
+
+    try {
+      const gameData = {
+        carrots,
+        guineaTokens,
+        telegramStars,
+        carrotsPerClickLevel,
+        maxEnergyLevel,
+        totalClicks: taskProgress.clicks,
+        level: Math.floor(guineaTokens / 100) + 1,
+        miners,
+        taskProgress,
+        weeklyTasks,
+      }
+
+      const response = await fetch("/api/player/save", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify(gameData),
+      })
+
+      if (response.status === 503) {
+        console.warn("[v0] Database not configured - data not synced")
+        return
+      }
+
+      console.log("[v0] Data synced with server")
+    } catch (error) {
+      console.error("[v0] Error syncing data:", error)
+    }
+  }
+
+  const loadLeaderboard = async (period: "daily" | "weekly" | "alltime") => {
+    try {
+      const response = await fetch(`/api/leaderboard/${period}`)
+
+      if (response.status === 503) {
+        console.warn("[v0] Database not configured - leaderboard not available")
+        return
+      }
+
+      const data = await response.json()
+
+      if (data.success && data.data) {
+        console.log(`[v0] Loaded ${period} leaderboard:`, data.data.length, "players")
+        setLeaderboardData((prev) => ({
+          ...prev,
+          [period]: data.data,
+        }))
+      }
+    } catch (error) {
+      console.error("[v0] Error loading leaderboard:", error)
+    }
+  }
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadLeaderboard("daily")
+      loadLeaderboard("weekly")
+      loadLeaderboard("alltime")
+    }
+  }, [isAuthenticated])
 
   const updateTaskProgress = (type: string, amount = 1) => {
     setTaskProgress((prev) => {
@@ -748,7 +987,7 @@ export default function GuineaPigTapGame() {
   }
 
   const handleTap = () => {
-    const energyCost = 1
+    const energyCost = 10
     const carrotsReward = getCurrentCarrotsPerClick()
     if (energy >= energyCost) {
       setCarrots((prev) => prev + carrotsReward)
@@ -787,7 +1026,7 @@ export default function GuineaPigTapGame() {
         return
       }
       setGuineaTokens((prev) => {
-        if (prev < cost) return prev // Дополнительная проверка
+        if (prev < cost) return prev
         return prev - cost
       })
       setCarrotsPerClickLevel((prev) => prev + 1)
@@ -800,7 +1039,7 @@ export default function GuineaPigTapGame() {
         return
       }
       setCarrots((prev) => {
-        if (prev < cost) return prev // Дополнительная проверка
+        if (prev < cost) return prev
         return prev - cost
       })
       setCarrotsPerClickLevel((prev) => prev + 1)
@@ -823,7 +1062,7 @@ export default function GuineaPigTapGame() {
         return
       }
       setGuineaTokens((prev) => {
-        if (prev < cost) return prev // Дополнительная проверка
+        if (prev < cost) return prev
         return prev - cost
       })
       setMaxEnergyLevel((prev) => prev + 1)
@@ -837,7 +1076,7 @@ export default function GuineaPigTapGame() {
         return
       }
       setCarrots((prev) => {
-        if (prev < cost) return prev // Дополнительная проверка
+        if (prev < cost) return prev
         return prev - cost
       })
       setMaxEnergyLevel((prev) => prev + 1)
@@ -857,7 +1096,7 @@ export default function GuineaPigTapGame() {
     const carrotsToSpend = gtToAdd * rate
 
     setCarrots((prev) => {
-      if (prev < carrotsToSpend) return prev // Дополнительная проверка
+      if (prev < carrotsToSpend) return prev
       return prev - carrotsToSpend
     })
     setGuineaTokens((prev) => prev + gtToAdd)
@@ -917,11 +1156,10 @@ export default function GuineaPigTapGame() {
       }),
     )
     updateTaskProgress("miners_bought", 1)
-    console.log("[v0] Miner upgraded successfully:", minerId, "to level", miner.level + 1)
   }
 
   const copyReferralLink = () => {
-    const referralLink = `https://t.me/GuineaPigTapBot?start=${referralCode}`
+    const referralLink = `https://t.me/GuineaPigClicker_bot?start=${referralCode}`
     if (navigator.clipboard) {
       navigator.clipboard
         .writeText(referralLink)
@@ -939,7 +1177,7 @@ export default function GuineaPigTapGame() {
   }
 
   const shareReferralLink = () => {
-    const referralLink = `https://t.me/GuineaPigTapBot?start=${referralCode}`
+    const referralLink = `https://t.me/GuineaPigClicker_bot?start=${referralCode}`
     const text = `🐹 Присоединяйся к Guinea Pig Tap! ${referralLink}`
     if (navigator.share) {
       navigator
@@ -978,12 +1216,102 @@ export default function GuineaPigTapGame() {
     }
 
     setTelegramStars((prev) => {
-      if (prev < stars) return prev // Дополнительная проверка
+      if (prev < stars) return prev
       return prev - stars
     })
     setShowSupportModal(false)
     updateTaskProgress("stars_spent", stars)
     alert("Спасибо за поддержку! ❤️")
+  }
+
+  const buyGTWithStars = (gtAmount: number, starsPrice: number) => {
+    if (typeof window !== "undefined" && (window as any).Telegram?.WebApp) {
+      const tg = (window as any).Telegram.WebApp
+      tg.openInvoice(
+        {
+          title: `Покупка ${gtAmount} GT`,
+          description: `Получите ${gtAmount} Guinea Tokens за ${starsPrice} Telegram Stars`,
+          currency: "XTR",
+          prices: [{ label: `${gtAmount} GT`, amount: starsPrice }],
+        },
+        (status: string) => {
+          if (status === "paid") {
+            setGuineaTokens((prev) => prev + gtAmount)
+            updateTaskProgress("gt_packages_bought", 1)
+            updateTaskProgress("gt_earned", gtAmount)
+            alert(`Успешно! Получено ${gtAmount} GT`)
+          } else if (status === "cancelled") {
+            alert("Покупка отменена")
+          } else {
+            alert("Ошибка при покупке")
+          }
+        },
+      )
+    } else {
+      alert("Telegram WebApp API недоступен. Откройте игру через Telegram бота.")
+    }
+  }
+
+  const buyGTWithTON = async (gtAmount: number, tonPrice: number) => {
+    if (!tonConnector) {
+      alert("TON Connect не инициализирован. Перезагрузите страницу.")
+      return
+    }
+
+    try {
+      if (!tonWallet) {
+        setTonPaymentStatus("Подключение кошелька...")
+        const connectedWallet = await tonConnector.connect()
+        setTonWallet(connectedWallet)
+        alert("Кошелек подключен! Теперь нажмите кнопку покупки снова.")
+        setTonPaymentStatus("")
+        return
+      }
+
+      setTonPaymentStatus("Отправка транзакции...")
+
+      const transaction = {
+        validUntil: Math.floor(Date.now() / 1000) + 300,
+        messages: [
+          {
+            address: "UQATdZnXCLh_2eZgKGNDwlA-Y0lFMsqF3SgdPgfjKPOPstLn",
+            amount: (tonPrice * 1e9).toString(),
+          },
+        ],
+      }
+
+      await tonConnector.sendTransaction(transaction)
+
+      setTonPaymentStatus("Проверка оплаты...")
+
+      setTimeout(async () => {
+        const check = await fetch("/api/checkPayment")
+        const data = await check.json()
+
+        if (data.success) {
+          setGuineaTokens((prev) => prev + gtAmount)
+          updateTaskProgress("gt_packages_bought", 1)
+          updateTaskProgress("gt_earned", gtAmount)
+          setTonPaymentStatus("")
+          alert(`Успешно! Получено ${gtAmount} GT за ${data.amount} TON`)
+        } else {
+          setTonPaymentStatus("")
+          alert("Оплата не найдена. Попробуйте позже или свяжитесь с поддержкой.")
+        }
+      }, 5000)
+    } catch (error) {
+      console.error("Error buying GT with TON:", error)
+      setTonPaymentStatus("")
+      alert("Ошибка при покупке. Попробуйте снова.")
+    }
+  }
+
+  const disconnectTONWallet = async () => {
+    if (tonConnector) {
+      await tonConnector.disconnect()
+      setTonWallet(null)
+      alert("Кошелек отключен")
+    }
   }
 
   const totalIncome = calculateTotalIncomePerHour()
@@ -1016,7 +1344,7 @@ export default function GuineaPigTapGame() {
               onClick={() => setShowConvertModal(true)}
               className="bg-orange-600 hover:bg-orange-700 text-xs px-3"
             >
-              Обмен
+              🥕→GT
             </Button>
           </div>
         </div>
@@ -1030,8 +1358,8 @@ export default function GuineaPigTapGame() {
               {totalIncome > 0 && (
                 <Card className="bg-gradient-to-r from-green-900/30 to-emerald-900/20 border-green-500/30 p-3">
                   <div className="text-sm text-gray-300">Пассивный доход</div>
-                  <div className="text-lg font-bold text-green-400">+{totalIncome.toFixed(2)} GT/час</div>
-                  <div className="text-xs text-gray-400">+{(totalIncome / 60).toFixed(4)} GT/мин</div>
+                  <div className="text-lg font-bold text-green-400">+{totalIncome.toFixed(4)} GT/час</div>
+                  <div className="text-xs text-gray-400">+{(totalIncome / 60).toFixed(6)} GT/мин</div>
                 </Card>
               )}
               <div
@@ -1122,7 +1450,6 @@ export default function GuineaPigTapGame() {
 
         {activeTab === "mine" && (
           <div className="space-y-6">
-            {console.log("[v0] Mining page is rendering, total income:", totalIncome)}
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-bold text-white">Майнеры</h2>
               <p className="text-sm text-gray-400">Покупайте майнеров для пассивного дохода GT</p>
@@ -1179,7 +1506,7 @@ export default function GuineaPigTapGame() {
                         {currentLevel && (
                           <div className="text-right">
                             <div className="text-sm font-semibold text-green-400">
-                              +{currentLevel.incomePerHour} GT/ч
+                              +{currentLevel.incomePerHour.toFixed(4)} GT/ч
                             </div>
                           </div>
                         )}
@@ -1308,6 +1635,216 @@ export default function GuineaPigTapGame() {
           </div>
         )}
 
+        {activeTab === "shop" && (
+          <div className="space-y-6">
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-bold text-white">Магазин</h2>
+              <p className="text-sm text-gray-400">Покупайте GT за Telegram Stars или TON</p>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-white">Покупка за Telegram Stars</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { gt: 10, stars: 20 },
+                  { gt: 25, stars: 50 },
+                  { gt: 50, stars: 100 },
+                  { gt: 100, stars: 200 },
+                  { gt: 250, stars: 500 },
+                  { gt: 500, stars: 1000 },
+                ].map((pack) => (
+                  <Card
+                    key={pack.gt}
+                    className="bg-gradient-to-br from-blue-900/30 to-purple-900/20 border-blue-500/30 p-4"
+                  >
+                    <div className="text-center space-y-2">
+                      <div className="text-3xl font-bold text-yellow-400">{pack.gt} GT</div>
+                      <div className="text-sm text-gray-400">{pack.stars} ⭐</div>
+                      <Button
+                        onClick={() => buyGTWithStars(pack.gt, pack.stars)}
+                        className="w-full bg-blue-600 hover:bg-blue-700"
+                      >
+                        Купить
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold text-white mb-4">Покупка за TON</h3>
+
+                {tonWallet && (
+                  <Card className="bg-gradient-to-br from-blue-900/30 to-cyan-900/20 border-blue-500/30 p-4 mb-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm text-gray-400">Подключен кошелек</div>
+                        <div className="text-xs font-mono text-blue-300">
+                          {tonWallet.account?.address?.slice(0, 8)}...{tonWallet.account?.address?.slice(-6)}
+                        </div>
+                      </div>
+                      <Button size="sm" onClick={disconnectTONWallet} variant="outline">
+                        Отключить
+                      </Button>
+                    </div>
+                  </Card>
+                )}
+
+                {tonPaymentStatus && (
+                  <Card className="bg-gradient-to-br from-yellow-900/30 to-orange-900/20 border-yellow-500/30 p-4 mb-4">
+                    <div className="text-center text-yellow-300">{tonPaymentStatus}</div>
+                  </Card>
+                )}
+
+                <Card className="bg-gradient-to-br from-cyan-900/30 to-blue-900/20 border-cyan-500/30 p-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <Wallet className="w-8 h-8 text-cyan-400" />
+                      <div>
+                        <h4 className="font-semibold text-white">Оплата TON</h4>
+                        <p className="text-sm text-gray-400">Подключите TON кошелек и купите GT</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="text-sm text-gray-300">Курс: 1 TON = 100 GT</div>
+                      <div className="text-xs text-gray-400">
+                        Поддерживаются: Tonkeeper, Wallet, Telegram Wallet и другие
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { gt: 10, ton: 0.1 },
+                        { gt: 25, ton: 0.25 },
+                        { gt: 50, ton: 0.5 },
+                        { gt: 100, ton: 1.0 },
+                        { gt: 250, ton: 2.5 },
+                        { gt: 500, ton: 5.0 },
+                      ].map((pack) => (
+                        <Button
+                          key={pack.gt}
+                          onClick={() => buyGTWithTON(pack.gt, pack.ton)}
+                          className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 h-auto py-3 flex flex-col gap-1"
+                        >
+                          <div className="text-lg font-bold">{pack.gt} GT</div>
+                          <div className="text-xs opacity-80">{pack.ton} TON</div>
+                        </Button>
+                      ))}
+                    </div>
+
+                    {!tonWallet && (
+                      <div className="text-center text-sm text-gray-400 mt-2">
+                        Нажмите на любую кнопку выше чтобы подключить кошелек
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "leaderboard" && (
+          <div className="space-y-6">
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-bold text-white flex items-center justify-center gap-2">
+                <Crown className="w-6 h-6 text-yellow-400" />
+                Таблица лидеров
+              </h2>
+              <p className="text-sm text-gray-400">Топ 100 игроков</p>
+            </div>
+
+            <div className="flex gap-2 justify-center">
+              <Button
+                size="sm"
+                onClick={() => {
+                  setLeaderboardPeriod("daily")
+                  loadLeaderboard("daily")
+                }}
+                className={
+                  leaderboardPeriod === "daily" ? "bg-purple-600 hover:bg-purple-700" : "bg-gray-700 hover:bg-gray-600"
+                }
+              >
+                День
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setLeaderboardPeriod("weekly")
+                  loadLeaderboard("weekly")
+                }}
+                className={
+                  leaderboardPeriod === "weekly" ? "bg-purple-600 hover:bg-purple-700" : "bg-gray-700 hover:bg-gray-600"
+                }
+              >
+                Неделя
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setLeaderboardPeriod("alltime")
+                  loadLeaderboard("alltime")
+                }}
+                className={
+                  leaderboardPeriod === "alltime"
+                    ? "bg-purple-600 hover:bg-purple-700"
+                    : "bg-gray-700 hover:bg-gray-600"
+                }
+              >
+                Все время
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              {leaderboardData[leaderboardPeriod].slice(0, 10).map((player) => (
+                <Card
+                  key={player.rank}
+                  className={`p-4 ${
+                    player.rank === 1
+                      ? "bg-gradient-to-r from-yellow-900/50 to-orange-900/30 border-yellow-500/50"
+                      : player.rank === 2
+                        ? "bg-gradient-to-r from-gray-700/50 to-gray-600/30 border-gray-400/50"
+                        : player.rank === 3
+                          ? "bg-gradient-to-r from-orange-900/50 to-red-900/30 border-orange-700/50"
+                          : "bg-gradient-to-br from-purple-900/30 to-blue-900/20 border-purple-500/30"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={`text-2xl font-bold ${
+                          player.rank === 1
+                            ? "text-yellow-400"
+                            : player.rank === 2
+                              ? "text-gray-300"
+                              : player.rank === 3
+                                ? "text-orange-400"
+                                : "text-gray-400"
+                        }`}
+                      >
+                        #{player.rank}
+                      </div>
+                      <div className="text-2xl">{player.avatar}</div>
+                      <div>
+                        <div className="font-semibold text-white">{player.username}</div>
+                        <div className="text-sm text-gray-400">{player.score.toLocaleString()} GT</div>
+                      </div>
+                    </div>
+                    {player.rank <= 3 && <Crown className="w-6 h-6 text-yellow-400" />}
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            <div className="text-center">
+              <Button variant="outline" className="border-purple-500/50 bg-transparent">
+                Показать больше
+              </Button>
+            </div>
+          </div>
+        )}
+
         {activeTab === "about" && (
           <div className="space-y-6">
             <div className="text-center space-y-4">
@@ -1393,6 +1930,7 @@ export default function GuineaPigTapGame() {
         </DialogContent>
       </Dialog>
 
+      {/* Support Modal */}
       <Dialog open={showSupportModal} onOpenChange={setShowSupportModal}>
         <DialogContent className="bg-gradient-to-br from-purple-900 to-blue-900 border-purple-500/50">
           <DialogHeader>
@@ -1422,8 +1960,52 @@ export default function GuineaPigTapGame() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={showCryptoPaymentModal} onOpenChange={setShowCryptoPaymentModal}>
+        <DialogContent className="bg-gradient-to-br from-purple-900 to-blue-900 border-purple-500/50">
+          <DialogHeader>
+            <DialogTitle className="text-white">Инструкция по оплате USDT</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-3 text-sm text-gray-300">
+              <div>
+                <strong className="text-white">Шаг 1:</strong> Отправьте USDT (ERC-20) на адрес:
+              </div>
+              <div className="bg-black/30 rounded-lg p-3 border border-green-500/20">
+                <div className="font-mono text-green-300 break-all text-xs">
+                  0x2482E6c61FbB294dF84502693700798131CEFCDD
+                </div>
+              </div>
+              <div>
+                <strong className="text-white">Шаг 2:</strong> Сохраните хэш транзакции (TX Hash)
+              </div>
+              <div>
+                <strong className="text-white">Шаг 3:</strong> Свяжитесь с поддержкой через Telegram бота
+                @GuineaPigClicker_bot и отправьте:
+              </div>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>Хэш транзакции</li>
+                <li>Сумму USDT</li>
+                <li>Ваш реферальный код: {referralCode}</li>
+              </ul>
+              <div>
+                <strong className="text-white">Шаг 4:</strong> Дождитесь подтверждения (обычно 5-15 минут)
+              </div>
+              <div className="text-yellow-400">
+                <strong>Курс:</strong> 1 USDT = 10 GT
+              </div>
+            </div>
+            <Button
+              onClick={() => setShowCryptoPaymentModal(false)}
+              className="w-full bg-purple-600 hover:bg-purple-700"
+            >
+              Понятно
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="fixed bottom-0 left-0 right-0 bg-black/40 backdrop-blur-md border-t border-purple-500/30 safe-area-inset-bottom">
-        <div className="grid grid-cols-6 gap-1 p-2">
+        <div className="grid grid-cols-8 gap-1 p-2">
           <button
             onClick={() => setActiveTab("main")}
             className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-all ${activeTab === "main" ? "bg-purple-600/30 text-purple-300" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
@@ -1458,6 +2040,23 @@ export default function GuineaPigTapGame() {
           >
             <Users className={`w-5 h-5 ${activeTab === "friends" ? "text-purple-400" : ""}`} />
             <span className="text-[10px] font-medium leading-tight text-center">Друзья</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("shop")}
+            className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-all ${activeTab === "shop" ? "bg-purple-600/30 text-purple-300" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
+          >
+            <ShoppingCart className={`w-5 h-5 ${activeTab === "shop" ? "text-purple-400" : ""}`} />
+            <span className="text-[10px] font-medium leading-tight text-center">Магазин</span>
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab("leaderboard")
+              if (!leaderboardData.daily.length) loadLeaderboard("daily")
+            }}
+            className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-all ${activeTab === "leaderboard" ? "bg-purple-600/30 text-purple-300" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
+          >
+            <Crown className={`w-5 h-5 ${activeTab === "leaderboard" ? "text-purple-400" : ""}`} />
+            <span className="text-[10px] font-medium leading-tight text-center">Лидеры</span>
           </button>
           <button
             onClick={() => setActiveTab("about")}
