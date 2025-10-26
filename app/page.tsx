@@ -24,6 +24,7 @@ import {
   ShoppingCart,
   Crown,
   Wallet,
+  Star,
 } from "lucide-react"
 import { TonConnect } from "@tonconnect/sdk"
 
@@ -613,6 +614,8 @@ export default function GuineaPigTapGame() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
   const [telegramUser, setTelegramUser] = useState<any>(null)
 
+  const [isTelegramAvailable, setIsTelegramAvailable] = useState(false)
+
   const selectRandomTasks = (): Task[] => {
     const shuffled = [...ALL_TASKS_POOL].sort(() => Math.random() - 0.5)
     const selected = shuffled.slice(0, 3)
@@ -698,6 +701,15 @@ export default function GuineaPigTapGame() {
         console.error("[v0] Error loading game data:", error)
       }
     }
+
+    if (typeof window !== "undefined" && (window as any).Telegram?.WebApp) {
+      setIsTelegramAvailable(true)
+      console.log("[v0] Telegram WebApp API available")
+    } else {
+      setIsTelegramAvailable(false)
+      console.log("[v0] Running in browser mode without Telegram")
+    }
+
     loadGameData()
     checkAndRotateTasks()
     authenticateUser()
@@ -1256,8 +1268,6 @@ export default function GuineaPigTapGame() {
           }
         },
       )
-    } else {
-      alert("Telegram WebApp API недоступен. Откройте игру через Telegram бота.")
     }
   }
 
@@ -1665,43 +1675,72 @@ export default function GuineaPigTapGame() {
         )}
 
         {activeTab === "shop" && (
-          <div className="space-y-6">
-            <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold text-white">Магазин</h2>
-              <p className="text-sm text-gray-400">Покупайте GT за Telegram Stars или TON</p>
-            </div>
+          // Показываем покупки за Stars только если Telegram доступен
+          <div className="flex-1 overflow-y-auto pb-24 px-4">
+            <div className="max-w-2xl mx-auto space-y-6 py-6">
+              <h2 className="text-2xl font-bold text-white text-center">Магазин</h2>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white">Покупка за Telegram Stars</h3>
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { gt: 10, stars: 20 },
-                  { gt: 25, stars: 50 },
-                  { gt: 50, stars: 100 },
-                  { gt: 100, stars: 200 },
-                  { gt: 250, stars: 500 },
-                  { gt: 500, stars: 1000 },
-                ].map((pack) => (
-                  <Card
-                    key={pack.gt}
-                    className="bg-gradient-to-br from-blue-900/30 to-purple-900/20 border-blue-500/30 p-4"
-                  >
-                    <div className="text-center space-y-2">
-                      <div className="text-3xl font-bold text-yellow-400">{pack.gt} GT</div>
-                      <div className="text-sm text-gray-400">{pack.stars} ⭐</div>
-                      <Button
-                        onClick={() => buyGTWithStars(pack.gt, pack.stars)}
-                        className="w-full bg-blue-600 hover:bg-blue-700"
-                      >
-                        Купить
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
-              </div>
+              {isTelegramAvailable && (
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                    <Star className="w-5 h-5 text-yellow-400" />
+                    Купить GT за Telegram Stars
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      onClick={() => buyGTWithStars(10, 20)}
+                      className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white p-4 rounded-xl flex flex-col items-center gap-2"
+                    >
+                      <span className="text-2xl font-bold">10 GT</span>
+                      <span className="text-sm">20 ⭐</span>
+                    </Button>
+                    <Button
+                      onClick={() => buyGTWithStars(25, 50)}
+                      className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white p-4 rounded-xl flex flex-col items-center gap-2"
+                    >
+                      <span className="text-2xl font-bold">25 GT</span>
+                      <span className="text-sm">50 ⭐</span>
+                    </Button>
+                    <Button
+                      onClick={() => buyGTWithStars(50, 100)}
+                      className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white p-4 rounded-xl flex flex-col items-center gap-2"
+                    >
+                      <span className="text-2xl font-bold">50 GT</span>
+                      <span className="text-sm">100 ⭐</span>
+                    </Button>
+                    <Button
+                      onClick={() => buyGTWithStars(100, 200)}
+                      className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white p-4 rounded-xl flex flex-col items-center gap-2"
+                    >
+                      <span className="text-2xl font-bold">100 GT</span>
+                      <span className="text-sm">200 ⭐</span>
+                    </Button>
+                  </div>
+                </div>
+              )}
 
-              <div className="mt-8">
-                <h3 className="text-lg font-semibold text-white mb-4">Покупка за TON</h3>
+              {!isTelegramAvailable && (
+                <div className="bg-blue-500/20 border border-blue-500/50 rounded-xl p-4">
+                  <p className="text-white text-center">
+                    Для покупки GT за Telegram Stars откройте игру через{" "}
+                    <a
+                      href="https://t.me/GuineaPigClicker_bot"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-300 underline"
+                    >
+                      @GuineaPigClicker_bot
+                    </a>
+                  </p>
+                </div>
+              )}
+
+              {/* TON платежи - работают всегда */}
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                  <Coins className="w-5 h-5 text-blue-400" />
+                  Купить GT за TON
+                </h3>
 
                 {tonWallet && (
                   <Card className="bg-gradient-to-br from-blue-900/30 to-cyan-900/20 border-blue-500/30 p-4 mb-4">
