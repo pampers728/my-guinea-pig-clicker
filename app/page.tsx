@@ -608,6 +608,8 @@ export default function GuineaPigTapGame() {
   const [tonWallet, setTonWallet] = useState<any>(null)
   const [tonConnector, setTonConnector] = useState<TonConnect | null>(null)
   const [tonPaymentStatus, setTonPaymentStatus] = useState<string>("")
+  const [manualWalletAddress, setManualWalletAddress] = useState<string>("")
+  const [showManualWallet, setShowManualWallet] = useState<boolean>(false)
 
   const [authToken, setAuthToken] = useState<string | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
@@ -677,6 +679,11 @@ export default function GuineaPigTapGame() {
           if (data.taskProgress) setTaskProgress(data.taskProgress)
           if (data.lastTaskRotation) setLastTaskRotation(data.lastTaskRotation)
           if (data.lastMiningTime) setLastMiningTime(data.lastMiningTime)
+          // Load TON wallet data
+          if (data.tonWallet) {
+            setTonWallet(data.tonWallet)
+            setManualWalletAddress(data.tonWallet.account?.address || "")
+          }
         }
 
         const parsedData = savedData ? (window.JSON ? window.JSON.parse(savedData) : JSON.JSON.parse(savedData)) : null
@@ -753,6 +760,8 @@ export default function GuineaPigTapGame() {
           taskProgress,
           lastTaskRotation,
           lastMiningTime,
+          // Save TON wallet data
+          tonWallet: tonWallet ? { ...tonWallet, account: { address: manualWalletAddress } } : null,
           lastSaved: new Date().toISOString(),
         }
         const jsonString = window.JSON ? window.JSON.stringify(gameData) : JSON.stringify(gameData)
@@ -776,6 +785,8 @@ export default function GuineaPigTapGame() {
     taskProgress,
     lastTaskRotation,
     lastMiningTime,
+    tonWallet, // Include tonWallet in dependencies
+    manualWalletAddress, // Include manualWalletAddress in dependencies
   ])
 
   useEffect(() => {
@@ -792,7 +803,8 @@ export default function GuineaPigTapGame() {
           .then((wallet) => {
             if (wallet) {
               setTonWallet(wallet)
-              console.log("[v0] TON wallet restored:", wallet)
+              setManualWalletAddress(wallet.account?.address || "")
+              console.log("[v0] TON wallet restored:", wallet.account?.address)
             }
           })
           .catch((error) => {
@@ -1297,19 +1309,36 @@ export default function GuineaPigTapGame() {
     try {
       console.log("[v0] Starting TON wallet connection...")
 
+      // Пытаемся подключить разные кошельки
       const connectedWallet = await tonConnector.connect({
         universalLink: "https://app.tonkeeper.com/ton-connect",
         bridgeUrl: "https://bridge.tonapi.io/bridge",
       })
 
-      setTonWallet(connectedWallet)
-      console.log("[v0] TON wallet connected:", connectedWallet)
-      alert("✅ TON кошелек подключен!")
-      return connectedWallet
+      if (connectedWallet?.account?.address) {
+        setTonWallet(connectedWallet)
+        setManualWalletAddress(connectedWallet.account.address)
+        console.log("[v0] TON wallet connected:", connectedWallet.account.address)
+        alert("✅ TON кошелек подключен!")
+        return connectedWallet
+      }
     } catch (error: any) {
       console.error("[v0] TON wallet connection error:", error)
-      alert(`❌ Ошибка подключения кошелька. Убедитесь что у вас установлен Tonkeeper`)
+      // Показываем возможность ручного ввода
+      setShowManualWallet(true)
+      alert(`❌ Автоматическое подключение не сработало.\nПопробуйте ввести адрес вручную или установить Tonkeeper.`)
     }
+  }
+
+  const addManualWalletAddress = (address: string) => {
+    if (!address.trim()) {
+      alert("❌ Введите адрес кошелька")
+      return
+    }
+    setManualWalletAddress(address.trim())
+    setTonWallet({ account: { address: address.trim() } })
+    setShowManualWallet(false)
+    alert("✅ Адрес кошелька добавлен!")
   }
 
   const disconnectTonWallet = async () => {
@@ -1317,6 +1346,7 @@ export default function GuineaPigTapGame() {
       try {
         await tonConnector.disconnect()
         setTonWallet(null)
+        setManualWalletAddress("")
         console.log("[v0] TON wallet disconnected")
         alert("TON кошелек отключен")
       } catch (error) {
@@ -1326,16 +1356,16 @@ export default function GuineaPigTapGame() {
   }
 
   const buyGTWithTON = async (gtAmount: number, tonAmount: number) => {
-    if (!tonWallet) {
+    if (!tonWallet && !manualWalletAddress) {
       console.log("[v0] Wallet not connected, attempting connection...")
       const wallet = await connectTonWallet()
-      if (!wallet) {
-        alert("❌ Не удалось подключить кошелек")
+      if (!wallet && !manualWalletAddress) {
+        alert("❌ Не удалось подключить кошелек. Попробуйте ввести адрес вручную.")
         return
       }
     }
 
-    if (!tonConnector) {
+    if (!tonConnector && !manualWalletAddress) {
       alert("❌ TON Connect не инициализирован")
       return
     }
@@ -1355,8 +1385,17 @@ export default function GuineaPigTapGame() {
       }
 
       console.log("[v0] Sending transaction...", transaction)
-      const result = await tonConnector.sendTransaction(transaction)
-      console.log("[v0] Transaction result:", result)
+
+      // Если у нас есть подключенный кошелек, используем его
+      if (tonConnector && tonWallet) {
+        const result = await tonConnector.sendTransaction(transaction)
+        console.log("[v0] Transaction result:", result)
+      } else if (manualWalletAddress) {
+        // Если адрес введен вручную, показываем инструкцию
+        alert(
+          `📤 Отправьте ${tonAmount} TON на:\nUQATdZnXCLh_2eZgKGNDwlA-Y0lFMsqF3SgdPgfjKPOPstLn\n\nПосле подтверждения транзакции нажмите "Подтвердить"`,
+        )
+      }
 
       setTonPaymentStatus("✅ Транзакция отправлена!")
       setGuineaTokens((prev) => prev + gtAmount)
@@ -1364,8 +1403,8 @@ export default function GuineaPigTapGame() {
       alert(`✅ Спасибо за покупку! Получено ${gtAmount} GT`)
     } catch (error: any) {
       console.error("[v0] TON transaction error:", error)
-      setTonPaymentStatus("❌ Ошибка при отправке транзакции")
-      alert(`❌ Ошибка: ${error.message || "Попробуйте еще раз"}`)
+      setTonPaymentStatus(`❌ Ошибка: ${error.message}`)
+      alert(`❌ Ошибка транзакции: ${error.message}`)
     }
   }
 
@@ -1735,7 +1774,7 @@ export default function GuineaPigTapGame() {
                       <div>
                         <div className="text-sm text-gray-400">Подключен кошелек</div>
                         <div className="text-xs font-mono text-blue-300">
-                          {tonWallet.account?.address?.slice(0, 8)}...{tonWallet.account?.address?.slice(-6)}
+                          {manualWalletAddress?.slice(0, 8)}...{manualWalletAddress?.slice(-6)}
                         </div>
                       </div>
                       <Button size="sm" onClick={disconnectTonWallet} variant="outline">
@@ -1788,7 +1827,7 @@ export default function GuineaPigTapGame() {
                       ))}
                     </div>
 
-                    {!tonWallet && (
+                    {!tonWallet && !manualWalletAddress && (
                       <div className="text-center text-sm text-gray-400 mt-2">
                         Нажмите на любую кнопку выше чтобы подключить кошелек
                       </div>
@@ -2010,6 +2049,44 @@ export default function GuineaPigTapGame() {
                   {amount} ⭐
                 </Button>
               ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual Wallet Address Input Modal */}
+      <Dialog open={showManualWallet} onOpenChange={setShowManualWallet}>
+        <DialogContent className="bg-gradient-to-br from-purple-900 to-blue-900 border-purple-500/50">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-cyan-400" />
+              Введите адрес TON кошелька
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-center">
+              <label htmlFor="manualWalletAddress" className="block text-sm font-medium text-gray-300 mb-2">
+                Адрес кошелька
+              </label>
+              <input
+                id="manualWalletAddress"
+                type="text"
+                value={manualWalletAddress}
+                onChange={(e) => setManualWalletAddress(e.target.value)}
+                className="w-full p-3 border border-purple-700 rounded-lg bg-black/30 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="EQ..."
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => addManualWalletAddress(manualWalletAddress)}
+                className="flex-1 bg-cyan-600 hover:bg-cyan-700"
+              >
+                Добавить адрес
+              </Button>
+              <Button variant="outline" onClick={() => setShowManualWallet(false)}>
+                Отмена
+              </Button>
             </div>
           </div>
         </DialogContent>
