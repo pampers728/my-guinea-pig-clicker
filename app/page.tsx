@@ -26,16 +26,8 @@ import {
   Wallet,
 } from "lucide-react"
 // Dynamically import TonConnect to avoid SSR issues and potential runtime errors
-let TonConnect: any = null
-if (typeof window !== "undefined") {
-  import("@tonconnect/sdk")
-    .then((module) => {
-      TonConnect = module.TonConnect
-    })
-    .catch((err) => {
-      console.log("[v0] TonConnect SDK not available:", err.message)
-    })
-}
+let TonConnectModule: any = null
+// </CHANGE> Removed direct import and dynamic import from here
 
 interface TaskReward {
   carrots: number
@@ -737,32 +729,42 @@ export default function GuineaPigTapGame() {
     authenticateUser()
   }, [])
 
+  // Moved TonConnect initialization inside useEffect
   useEffect(() => {
-    if (typeof window !== "undefined" && TonConnect) {
-      try {
-        const connector = new TonConnect({
-          manifestUrl: `${window.location.origin}/tonconnect-manifest.json`,
-        })
-        setTonConnector(connector)
-        console.log("[v0] TonConnect initialized successfully")
+    if (typeof window !== "undefined") {
+      import("@tonconnect/sdk")
+        .then((module) => {
+          const TonConnect = module.TonConnect // Get TonConnect class from the module
+          TonConnectModule = module // Assign the whole module if needed elsewhere, though not currently used
+          try {
+            const connector = new TonConnect({
+              manifestUrl: `${window.location.origin}/tonconnect-manifest.json`,
+            })
+            setTonConnector(connector)
+            console.log("[v0] TonConnect initialized successfully")
 
-        connector.onStatusChange((status: any) => {
-          if (status) {
-            setTonWallet(status)
-            if (status.account?.address) {
-              setManualWalletAddress(status.account.address)
-              console.log("[v0] Wallet connected:", status.account.address)
-            }
-          } else {
-            setTonWallet(null)
-            console.log("[v0] Wallet disconnected")
+            connector.onStatusChange((status: any) => {
+              if (status) {
+                setTonWallet(status)
+                if (status.account?.address) {
+                  setManualWalletAddress(status.account.address)
+                  console.log("[v0] Wallet connected:", status.account.address)
+                }
+              } else {
+                setTonWallet(null)
+                console.log("[v0] Wallet disconnected")
+              }
+            })
+          } catch (e: any) {
+            console.error("[v0] Failed to initialize TonConnect:", e.message)
           }
         })
-      } catch (e: any) {
-        console.error("[v0] Failed to initialize TonConnect:", e.message)
-      }
+        .catch((err) => {
+          console.error("[v0] Failed to load TonConnect SDK:", err.message) // Log error if SDK fails to load
+        })
     }
   }, [])
+  // </CHANGE>
 
   useEffect(() => {
     if (isAuthenticated) {
