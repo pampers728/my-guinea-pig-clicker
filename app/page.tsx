@@ -738,16 +738,26 @@ export default function GuineaPigTapGame() {
   }, [])
 
   useEffect(() => {
-    // TON Connect initialization
     if (typeof window !== "undefined" && TonConnect) {
       try {
         const connector = new TonConnect({
-          // @ts-ignore
-          manifestUrl: "https://example.com/tonconnect-manifest.json", // Replace with your manifest URL
-          bridgeUrl: "https://bridge.tonconnect.io/bridge", // Example bridge URL
+          manifestUrl: `${window.location.origin}/tonconnect-manifest.json`,
         })
         setTonConnector(connector)
-        console.log("[v0] TonConnect initialized")
+        console.log("[v0] TonConnect initialized successfully")
+
+        connector.onStatusChange((status: any) => {
+          if (status) {
+            setTonWallet(status)
+            if (status.account?.address) {
+              setManualWalletAddress(status.account.address)
+              console.log("[v0] Wallet connected:", status.account.address)
+            }
+          } else {
+            setTonWallet(null)
+            console.log("[v0] Wallet disconnected")
+          }
+        })
       } catch (e: any) {
         console.error("[v0] Failed to initialize TonConnect:", e.message)
       }
@@ -1061,7 +1071,7 @@ export default function GuineaPigTapGame() {
 
     if (isGTCost) {
       if (guineaTokens < cost) {
-        alert(`Недостаточно GT! Нужно: ${cost.toFixed(2)} GT, у вас: ${guineaTokens.toFixed(2)} GT`)
+        alert(`Недостаточно GT! Нужно: ${cost.toFixed(2)} GT, у уас: ${guineaTokens.toFixed(2)} GT`)
         return
       }
       setGuineaTokens((prev) => {
@@ -1263,6 +1273,130 @@ export default function GuineaPigTapGame() {
     alert("Спасибо за поддержку! ❤️")
   }
 
+  const connectTonWallet = async () => {
+    if (!tonConnector) {
+      alert("TON Connect не готов. Пожалуйста, попробуйте позже.")
+      console.log("[v0] Connector not initialized")
+      return false
+    }
+
+    try {
+      console.log("[v0] Attempting to connect wallet...")
+      const walletList = await tonConnector.getWallets()
+      console.log("[v0] Available wallets:", walletList)
+
+      const wallet = await tonConnector.connect({
+        universalLink: tonConnector.getUniversalLink?.(),
+      })
+
+      if (wallet) {
+        console.log("[v0] Wallet connected:", wallet.account?.address)
+        setTonWallet(wallet)
+        setManualWalletAddress(wallet.account?.address || "")
+        return true
+      }
+      return false
+    } catch (error: any) {
+      console.error("[v0] Wallet connection error:", error)
+      alert(`Ошибка подключения: ${error.message}`)
+      return false
+    }
+  }
+
+  const sendTonPayment = async (gtAmount: number, tonAmount: number) => {
+    if (!tonConnector) {
+      alert("TON Connect не инициализирован")
+      return false
+    }
+
+    let wallet = tonWallet
+
+    // Если кошелек не подключен, подключаем его
+    if (!wallet) {
+      const connected = await connectTonWallet()
+      if (!connected) {
+        setShowManualWallet(true)
+        return false
+      }
+      wallet = tonWallet
+    }
+
+    if (!wallet?.account?.address) {
+      console.log("[v0] No wallet address found")
+      setShowManualWallet(true)
+      return false
+    }
+
+    try {
+      const recipientAddress = "UQATdZnXCLh_2eZgKGNDwlA-Y0lFMsqF3SgdPgfjKPOPstLn"
+      const amountInNanoTon = Math.floor(tonAmount * 1e9).toString()
+
+      console.log("[v0] Sending transaction:", {
+        from: wallet.account.address,
+        to: recipientAddress,
+        amount: tonAmount,
+        amountInNanoTon,
+        gtAmount,
+      })
+
+      const transaction = {
+        validUntil: Math.floor(Date.now() / 1000) + 600,
+        messages: [
+          {
+            address: recipientAddress,
+            amount: amountInNanoTon,
+          },
+        ],
+      }
+
+      const result = await tonConnector.sendTransaction(transaction)
+      console.log("[v0] Transaction successful:", result)
+
+      // Обновляем игровое состояние после успешной транзакции
+      setGuineaTokens((prev) => prev + gtAmount)
+      updateTaskProgress("gt_earned", gtAmount)
+      alert(`✅ Платеж отправлен! Получено ${gtAmount} GT.`)
+      setTonPaymentStatus("")
+      return true
+    } catch (error: any) {
+      console.error("[v0] Transaction error:", error)
+
+      if (error?.message?.includes("not connected")) {
+        setShowManualWallet(true)
+        alert("Кошелек отключился. Попробуйте еще раз.")
+      } else {
+        alert(`Ошибка транзакции: ${error.message}`)
+      }
+      return false
+    }
+  }
+
+  const buyGTWithTON = async (gtAmount: number, tonAmount: number) => {
+    console.log("[v0] Starting TON payment:", { gtAmount, tonAmount })
+    await sendTonPayment(gtAmount, tonAmount)
+  }
+
+  const disconnectTonWallet = () => {
+    if (tonConnector) {
+      tonConnector.disconnect()
+    }
+    setTonWallet(null)
+    setManualWalletAddress("")
+    console.log("[v0] Wallet disconnected")
+  }
+
+  const addManualWalletAddress = (address: string) => {
+    if (!address || !address.startsWith("UQ")) {
+      alert("Пожалуйста, введите корректный адрес TON кошелька (начинается с UQ).")
+      return
+    }
+    setManualWalletAddress(address)
+    setTonWallet({ account: { address: address } }) // Simulate wallet object for display
+    setShowManualWallet(false)
+    alert("Адрес кошелька добавлен. Для совершения транзакций вам понадобится подключить кошелек через TON Connect.")
+  }
+
+  // START OF UPDATES
   const buyGTWithStars = async (gtAmount: number, starsAmount: number) => {
     try {
       const tg = window.Telegram?.WebApp
@@ -1271,165 +1405,56 @@ export default function GuineaPigTapGame() {
         return
       }
 
-      console.log("[v0] Opening Telegram Stars invoice...")
-      tg.openInvoice({
-        title: `Купить ${gtAmount} GT`,
-        description: `${gtAmount} Guinea Tokens за ${starsAmount} ⭐ Stars`,
-        currency: "XTR", // Assuming XTR is the currency for Telegram Stars
-        prices: [{ amount: starsAmount * 100 }], // Telegram expects amount in the smallest unit (e.g., cents for USD, or in this case, a multiplier for stars)
-        payload: JSON.stringify({ gtAmount, starsAmount, referrerCode: localStorage.getItem("referrerCode") }), // Include referrer code
-        provider_token: "", // Telegram will fill this automatically for official payments
-        keep_alive: true,
-      })
+      const purchaseId = `purchase_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
-      console.log("[v0] Waiting for payment...")
-      tg.onEvent("invoiceClosed", (payload: any) => {
-        if (payload.status === "paid") {
-          console.log("[v0] Payment successful!")
-          setGuineaTokens((prev) => prev + gtAmount)
-          updateTaskProgress("gt_earned", gtAmount)
-          updateTaskProgress("stars_spent", starsAmount) // Track stars spent
-          alert(`✅ Спасибо за покупку! Получено ${gtAmount} GT`)
-        } else {
-          console.log("[v0] Payment cancelled")
-          alert("❌ Платеж отменён")
-        }
-      })
+      console.log("[v0] Opening Telegram Stars invoice...", { gtAmount, starsAmount, purchaseId })
+
+      tg.openInvoice(
+        {
+          title: `Купить ${gtAmount} GT`,
+          description: `${gtAmount} Guinea Tokens за ${starsAmount} ⭐ Stars`,
+          currency: "XTR",
+          prices: [{ amount: starsAmount }],
+          payload: purchaseId,
+          provider_token: "", // Placeholder, actual token is managed by Telegram
+        },
+        (status: string) => {
+          console.log("[v0] Invoice closed with status:", status)
+
+          if (status === "paid") {
+            console.log("[v0] Telegram Stars payment successful!")
+            setGuineaTokens((prev) => prev + gtAmount)
+            updateTaskProgress("gt_earned", gtAmount)
+            updateTaskProgress("stars_spent", starsAmount)
+
+            // Save purchase to local storage to potentially sync with backend later
+            const purchases = JSON.parse(localStorage.getItem("purchases") || "[]")
+            purchases.push({
+              id: purchaseId,
+              type: "stars",
+              gtAmount,
+              starsAmount,
+              timestamp: Date.now(),
+              status: "completed",
+            })
+            localStorage.setItem("purchases", JSON.stringify(purchases))
+
+            alert(`✅ Спасибо за покупку! Получено ${gtAmount} GT`)
+          } else if (status === "failed") {
+            console.error("[v0] Telegram Stars payment failed")
+            alert("❌ Платеж не был подтвержден. Попробуйте еще раз.")
+          } else if (status === "cancelled") {
+            console.log("[v0] Telegram Stars payment cancelled by user")
+            alert("❌ Платеж отменен.")
+          }
+        },
+      )
     } catch (error: any) {
       console.error("[v0] Stars payment error:", error)
-      alert(`❌ Ошибка платежа: ${error.message}`)
+      alert(`❌Ошибка платежа: ${error.message}`)
     }
   }
-
-  const connectTonWallet = async (): Promise<any> => {
-    if (!tonConnector) {
-      console.error("[v0] TON Connector not initialized")
-      alert("❌ TON Connect не инициализирован")
-      return null
-    }
-
-    try {
-      console.log("[v0] Connecting TON wallet...")
-      // Use TonConnect UI to handle connection, which should provide a more robust experience
-      const wallet = await tonConnector.connect({
-        // Pass the correct bridge URLs and universal links as provided by TonConnect SDK
-        // These might need to be fetched dynamically or configured correctly
-        // Example:
-        bridgeUrl: "https://bridge.tonapi.io/bridge",
-        universalLink: "https://app.tonkeeper.com/ton-connect",
-      })
-
-      if (wallet) {
-        setTonWallet(wallet)
-        setManualWalletAddress(wallet.account?.address || "")
-        console.log("[v0] TON wallet connected:", wallet.account?.address)
-        alert("✅ TON кошелек подключен успешно!")
-        return wallet
-      }
-    } catch (error: any) {
-      console.error("[v0] TON connection error:", error)
-      console.log("[v0] Попробуйте установить Tonkeeper или Wallet.app")
-      alert(
-        "❌ Не удалось подключить кошелек автоматически.\nПопробуйте ввести адрес вручную или используйте Tonkeeper.",
-      )
-      setShowManualWallet(true) // Show manual input if auto-connect fails
-      return null
-    }
-  }
-
-  const addManualWalletAddress = (address: string) => {
-    if (!address.trim()) {
-      alert("❌ Введите адрес кошелька")
-      return
-    }
-    setManualWalletAddress(address.trim())
-    setTonWallet({ account: { address: address.trim() } }) // Simulate wallet object for subsequent checks
-    setShowManualWallet(false)
-    alert("✅ Адрес кошелька добавлен!")
-  }
-
-  const disconnectTonWallet = async () => {
-    if (tonConnector) {
-      try {
-        await tonConnector.disconnect()
-        setTonWallet(null)
-        setManualWalletAddress("")
-        console.log("[v0] TON wallet disconnected")
-        alert("TON кошелек отключен")
-      } catch (error) {
-        console.error("[v0] Error disconnecting TON wallet:", error)
-      }
-    }
-  }
-
-  const buyGTWithTON = async (gtAmount: number, tonAmount: number) => {
-    if (!tonConnector) {
-      alert("❌ TON Connect не инициализирован. Попробуйте перезагрузить страницу.")
-      return
-    }
-
-    // Attempt to connect wallet if not already connected
-    if (!tonWallet && !manualWalletAddress) {
-      console.log("[v0] Wallet not connected, attempting auto connection...")
-      const connectedWallet = await connectTonWallet()
-      if (!connectedWallet && !manualWalletAddress) {
-        // If connection failed and manual address is not set, prompt for manual input or show payment modal
-        setShowManualWallet(true) // Show manual input modal
-        alert("Пожалуйста, введите адрес вашего TON кошелька.")
-        return
-      }
-    }
-
-    try {
-      // Check if a wallet is connected or manual address is set
-      if (tonConnector && tonWallet?.account?.address) {
-        console.log("[v0] Sending TON transaction via connected wallet...")
-        const transaction = {
-          validUntil: Math.floor(Date.now() / 1000) + 600, // 10 minutes validity
-          messages: [
-            {
-              address: "UQATdZnXCLh_2eZgKGNDwlA-Y0lFMsqF3SgdPgfjKPOPstLn", // Target TON address
-              amount: (tonAmount * 1e9).toString(), // Amount in nanoTON
-              // Payload can be used for more complex interactions if needed.
-              // For a simple payment, it might be optional or a specific identifier.
-              // Example payload structure often includes game-specific info.
-              payload: JSON.stringify({
-                type: "buy_gt",
-                gtAmount: gtAmount,
-                userAddress: tonWallet.account.address,
-                referrerCode: localStorage.getItem("referrerCode"),
-              }),
-            },
-          ],
-        }
-
-        const result = await tonConnector.sendTransaction(transaction)
-        console.log("[v0] Transaction sent:", result)
-
-        // Upon successful transaction initiation (doesn't guarantee payment completion, but usually indicates success)
-        setGuineaTokens((prev) => prev + gtAmount)
-        updateTaskProgress("gt_earned", gtAmount)
-        updateTaskProgress("gt_spent", tonAmount) // Consider tracking TON spent as well if relevant
-        alert(`✅ Транзакция отправлена! Ожидайте зачисления ${gtAmount} GT.`)
-      } else if (manualWalletAddress) {
-        // If only manual address is available, provide instructions
-        console.log("[v0] Manual payment instruction mode")
-        alert(
-          `📤 Отправьте ${tonAmount} TON на:\nUQATdZnXCLh_2eZgKGNDwlA-Y0lFMsqF3SgdPgfjKPOPstLn\n\nПосле подтверждения транзакции нажмите OK.`,
-        )
-        // Assuming manual confirmation implies success for now, actual confirmation would require backend verification
-        setGuineaTokens((prev) => prev + gtAmount)
-        updateTaskProgress("gt_earned", gtAmount)
-        updateTaskProgress("gt_spent", tonAmount) // Consider tracking TON spent
-        alert(`✅ Спасибо за покупку! Получено ${gtAmount} GT`)
-      } else {
-        alert("❌ Кошелек TON не подключен. Пожалуйста, подключите кошелек или введите адрес.")
-      }
-    } catch (error: any) {
-      console.error("[v0] TON transaction error:", error)
-      alert(`❌ Ошибка транзакции: ${error.message}`)
-    }
-  }
+  // END OF UPDATES
 
   const totalIncome = calculateTotalIncomePerHour()
 
@@ -1576,7 +1601,7 @@ export default function GuineaPigTapGame() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-sm text-gray-300">Майнинг активен</div>
+                      <div className="text-sm text-gray-300">Пассивный доход</div>
                       <div className="text-2xl font-bold text-green-400">+{totalIncome.toFixed(4)} GT/час</div>
                       <div className="text-xs text-gray-400">+{(totalIncome / 60).toFixed(6)} GT/мин</div>
                     </div>
@@ -2058,7 +2083,9 @@ export default function GuineaPigTapGame() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-center">
-              <div className="text-lg text-gray-300 mb-4">Выберите сумму</div>
+              <label htmlFor="manualWalletAddress" className="block text-sm font-medium text-gray-300 mb-2">
+                Выберите сумму
+              </label>
               <div className="text-sm text-gray-400">Ваши Stars: {telegramStars} ⭐</div>
             </div>
             <div className="grid grid-cols-3 gap-3">
