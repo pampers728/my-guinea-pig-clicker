@@ -25,6 +25,7 @@ import {
   Crown,
   Wallet,
 } from "lucide-react"
+import { TelegramProvider, useTelegram } from "@/components/TelegramProvider"
 // Dynamically import TonConnect to avoid SSR issues and potential runtime errors
 let TonConnectModule: any = null
 // </CHANGE> Removed direct import and dynamic import from here
@@ -377,7 +378,16 @@ const ALL_TASKS_POOL: Omit<Task, "progress" | "completed" | "claimed">[] = [
   },
 ]
 
-export default function GuineaPigTapGame() {
+export default function GuineaPigTapGameWrapper() {
+  return (
+    <TelegramProvider>
+      <GuineaPigGame />
+    </TelegramProvider>
+  )
+}
+
+function GuineaPigGame() {
+  const tg = useTelegram()
   const [carrots, setCarrots] = useState<number>(0)
   const [guineaTokens, setGuineaTokens] = useState<number>(0)
   const [telegramStars, setTelegramStars] = useState<number>(0)
@@ -1399,10 +1409,55 @@ export default function GuineaPigTapGame() {
   }
 
   // START OF UPDATES
-  const buyGTWithStars = async (gtAmount: number, starsAmount: number) => {
+  const handleBuyWithStars = async (starsAmount: number, gtAmount: number) => {
     try {
-      const tg = window.Telegram?.WebApp
-      if (!tg) {
+      if (tg.isAvailable && tg.user) {
+        // Send purchase intent to bot
+        tg.sendData({
+          action: "buy_gt_stars",
+          gtAmount,
+          starsAmount,
+          timestamp: Date.now(),
+          userId: tg.user.id,
+        })
+        console.log("[v0] Sent buy request to Telegram bot")
+        setGuineaTokens((prev) => prev + gtAmount)
+        setTelegramStars((prev) => prev - starsAmount) // Deduct stars immediately
+        updateTaskProgress("stars_spent", starsAmount)
+        updateTaskProgress("gt_packages_bought", 1)
+        updateTaskProgress("gt_earned", gtAmount)
+        setShowSupportModal(false) // Close support modal after purchase
+        alert(`✅ Спасибо за покупку! Получено ${gtAmount} GT`)
+      } else {
+        alert("Откройте игру в Telegram чтобы купить за Stars")
+      }
+    } catch (error) {
+      console.error("[v0] Error buying with stars:", error)
+      alert("❌ Ошибка при покупке. Пожалуйста, попробуйте еще раз.")
+    }
+  }
+
+  const handleClaimReferralBonus = (friendId: string) => {
+    if (tg.isAvailable && tg.user) {
+      tg.sendData({
+        action: "claim_referral_bonus",
+        friendId,
+        timestamp: Date.now(),
+        userId: tg.user.id,
+      })
+      console.log("[v0] Sent referral bonus claim to Telegram bot")
+      // Placeholder for actual bonus logic
+      alert("Бонус за приглашение будет начислен!")
+    } else {
+      alert("Откройте игру в Telegram для получения бонуса")
+    }
+  }
+
+  // Telegram Stars Purchase Logic
+  const buyGTWithStars = async (starsAmount: number, gtAmount: number) => {
+    try {
+      const tgWebApp = window.Telegram?.WebApp
+      if (!tgWebApp) {
         alert("❌ Telegram WebApp недоступен. Откройте игру через бота.")
         return
       }
@@ -1411,7 +1466,7 @@ export default function GuineaPigTapGame() {
 
       console.log("[v0] Opening Telegram Stars invoice...", { gtAmount, starsAmount, purchaseId })
 
-      tg.openInvoice(
+      tgWebApp.openInvoice(
         {
           title: `Купить ${gtAmount} GT`,
           description: `${gtAmount} Guinea Tokens за ${starsAmount} ⭐ Stars`,
@@ -1425,9 +1480,8 @@ export default function GuineaPigTapGame() {
 
           if (status === "paid") {
             console.log("[v0] Telegram Stars payment successful!")
-            setGuineaTokens((prev) => prev + gtAmount)
-            updateTaskProgress("gt_earned", gtAmount)
-            updateTaskProgress("stars_spent", starsAmount)
+            // Use the dedicated handler for buying with stars
+            handleBuyWithStars(starsAmount, gtAmount)
 
             // Save purchase to local storage to potentially sync with backend later
             const purchases = JSON.parse(localStorage.getItem("purchases") || "[]")
@@ -1440,8 +1494,6 @@ export default function GuineaPigTapGame() {
               status: "completed",
             })
             localStorage.setItem("purchases", JSON.stringify(purchases))
-
-            alert(`✅ Спасибо за покупку! Получено ${gtAmount} GT`)
           } else if (status === "failed") {
             console.error("[v0] Telegram Stars payment failed")
             alert("❌ Платеж не был подтвержден. Попробуйте еще раз.")
@@ -1805,7 +1857,7 @@ export default function GuineaPigTapGame() {
                       <div className="text-3xl font-bold text-yellow-400">{pack.gt} GT</div>
                       <div className="text-sm text-gray-400">{pack.stars} ⭐</div>
                       <Button
-                        onClick={() => buyGTWithStars(pack.gt, pack.stars)}
+                        onClick={() => buyGTWithStars(pack.stars, pack.gt)}
                         className="w-full bg-blue-600 hover:bg-blue-700"
                       >
                         Купить
@@ -2094,7 +2146,7 @@ export default function GuineaPigTapGame() {
               {[1, 5, 10, 20, 50, 100].map((amount) => (
                 <Button
                   key={amount}
-                  onClick={() => supportDeveloper(amount)}
+                  onClick={() => handleBuyWithStars(amount, amount)} // Pass starsAmount and gtAmount
                   disabled={telegramStars < amount}
                   className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 h-12 text-base font-bold"
                 >
