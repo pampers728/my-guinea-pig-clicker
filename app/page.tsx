@@ -1454,60 +1454,66 @@ function GuineaPigGame() {
   }
 
   // Telegram Stars Purchase Logic
-  const buyGTWithStars = async (starsAmount: number, gtAmount: number) => {
+  const buyGTWithStars = async (gtAmount: number) => {
     try {
       const tgWebApp = window.Telegram?.WebApp
-      if (!tgWebApp) {
+      if (!tgWebApp || !tg.user) {
         alert("❌ Telegram WebApp недоступен. Откройте игру через бота.")
         return
       }
 
-      const purchaseId = `purchase_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      console.log("[v0] Initiating Stars purchase via API:", { gtAmount, userId: tg.user.id })
 
-      console.log("[v0] Opening Telegram Stars invoice...", { gtAmount, starsAmount, purchaseId })
+      const response = await fetch("/api/buy-stars", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: tg.user.id,
+          gtAmount,
+        }),
+      })
 
-      tgWebApp.openInvoice(
-        {
-          title: `Купить ${gtAmount} GT`,
-          description: `${gtAmount} Guinea Tokens за ${starsAmount} ⭐ Stars`,
-          currency: "XTR",
-          prices: [{ amount: starsAmount }],
-          payload: purchaseId,
-          provider_token: "", // Placeholder, actual token is managed by Telegram
-        },
-        (status: string) => {
-          console.log("[v0] Invoice closed with status:", status)
+      const result = await response.json()
 
-          if (status === "paid") {
-            console.log("[v0] Telegram Stars payment successful!")
-            // Use the dedicated handler for buying with stars
-            handleBuyWithStars(starsAmount, gtAmount)
+      if (!response.ok) {
+        console.error("[v0] Failed to initiate purchase:", result)
+        alert(`❌ Ошибка: ${result.error}`)
+        return
+      }
 
-            // Save purchase to local storage to potentially sync with backend later
-            const purchases = JSON.parse(localStorage.getItem("purchases") || "[]")
-            purchases.push({
-              id: purchaseId,
-              type: "stars",
-              gtAmount,
-              starsAmount,
-              timestamp: Date.now(),
-              status: "completed",
-            })
-            localStorage.setItem("purchases", JSON.stringify(purchases))
-          } else if (status === "failed") {
-            console.error("[v0] Telegram Stars payment failed")
-            alert("❌ Платеж не был подтвержден. Попробуйте еще раз.")
-          } else if (status === "cancelled") {
-            console.log("[v0] Telegram Stars payment cancelled by user")
-            alert("❌ Платеж отменен.")
-          }
-        },
-      )
+      console.log("[v0] Purchase initiated successfully")
+      alert(`✅ Счет отправлен! Пожалуйста, оплатите в чате с ботом.`)
+
+      setShowSupportModal(false)
     } catch (error: any) {
-      console.error("[v0] Stars payment error:", error)
-      alert(`❌Ошибка платежа: ${error.message}`)
+      console.error("[v0] Stars purchase error:", error)
+      alert(`❌ Ошибка: ${error.message}`)
     }
   }
+
+  const syncBalanceFromServer = async () => {
+    if (!tg.user) return
+
+    try {
+      const response = await fetch(`/api/get-balance/${tg.user.id}`)
+      const data = await response.json()
+
+      if (response.ok) {
+        setGuineaTokens(data.guineaTokens)
+        console.log("[v0] Balance synced from server:", data)
+      }
+    } catch (error) {
+      console.error("[v0] Failed to sync balance:", error)
+    }
+  }
+
+  useEffect(() => {
+    if (tg.isAvailable && tg.user) {
+      syncBalanceFromServer()
+      const interval = setInterval(syncBalanceFromServer, 30000) // Sync every 30 seconds
+      return () => clearInterval(interval)
+    }
+  }, [tg.isAvailable, tg.user])
   // END OF UPDATES
 
   const totalIncome = calculateTotalIncomePerHour()
@@ -1857,10 +1863,12 @@ function GuineaPigGame() {
                       <div className="text-3xl font-bold text-yellow-400">{pack.gt} GT</div>
                       <div className="text-sm text-gray-400">{pack.stars} ⭐</div>
                       <Button
-                        onClick={() => buyGTWithStars(pack.stars, pack.gt)}
+                        onClick={() => buyGTWithStars(pack.gt)} // Pass only GT amount
                         className="w-full bg-blue-600 hover:bg-blue-700"
                       >
-                        Купить
+                        {pack.gt} GT
+                        <br />
+                        <span className="text-xs">{pack.gt * 2} ⭐</span>
                       </Button>
                     </div>
                   </Card>
