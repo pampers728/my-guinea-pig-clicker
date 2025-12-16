@@ -719,7 +719,7 @@ function GuineaPigGame() {
     }
 
     const urlParams = new URLSearchParams(window.location.search)
-    const startParam = urlParams.get("start")
+    const startParam = urlParams.get("start") || urlParams.get("tgWebAppStartParam")
     if (startParam && startParam.startsWith("ref_")) {
       const referrerCode = startParam.replace("ref_", "")
       localStorage.setItem("referrerCode", referrerCode)
@@ -1409,56 +1409,12 @@ function GuineaPigGame() {
   }
 
   // START OF UPDATES
-  const handleBuyWithStars = async (starsAmount: number, gtAmount: number) => {
-    try {
-      if (tg.isAvailable && tg.user) {
-        // Send purchase intent to bot
-        tg.sendData({
-          action: "buy_gt_stars",
-          gtAmount,
-          starsAmount,
-          timestamp: Date.now(),
-          userId: tg.user.id,
-        })
-        console.log("[v0] Sent buy request to Telegram bot")
-        setGuineaTokens((prev) => prev + gtAmount)
-        setTelegramStars((prev) => prev - starsAmount) // Deduct stars immediately
-        updateTaskProgress("stars_spent", starsAmount)
-        updateTaskProgress("gt_packages_bought", 1)
-        updateTaskProgress("gt_earned", gtAmount)
-        setShowSupportModal(false) // Close support modal after purchase
-        alert(`✅ Спасибо за покупку! Получено ${gtAmount} GT`)
-      } else {
-        alert("Откройте игру в Telegram чтобы купить за Stars")
-      }
-    } catch (error) {
-      console.error("[v0] Error buying with stars:", error)
-      alert("❌ Ошибка при покупке. Пожалуйста, попробуйте еще раз.")
-    }
-  }
-
-  const handleClaimReferralBonus = (friendId: string) => {
-    if (tg.isAvailable && tg.user) {
-      tg.sendData({
-        action: "claim_referral_bonus",
-        friendId,
-        timestamp: Date.now(),
-        userId: tg.user.id,
-      })
-      console.log("[v0] Sent referral bonus claim to Telegram bot")
-      // Placeholder for actual bonus logic
-      alert("Бонус за приглашение будет начислен!")
-    } else {
-      alert("Откройте игру в Telegram для получения бонуса")
-    }
-  }
-
-  // Telegram Stars Purchase Logic
+  // Removed handleBuyWithStars, using buyGTWithStars via API
   const buyGTWithStars = async (gtAmount: number) => {
     try {
       const tgWebApp = window.Telegram?.WebApp
       if (!tgWebApp || !tg.user) {
-        alert("❌ Telegram WebApp недоступен. Откройте игру через бота.")
+        alert("❌ Telegram WebApp недоступен. Откройте игру через Telegram бота @GuineaPigClicker_bot")
         return
       }
 
@@ -1481,8 +1437,18 @@ function GuineaPigGame() {
         return
       }
 
-      console.log("[v0] Purchase initiated successfully")
-      alert(`✅ Счет отправлен! Пожалуйста, оплатите в чате с ботом.`)
+      console.log("[v0] Invoice sent successfully! Check your Telegram chat with bot.")
+      alert(`✅ Счет отправлен в чат с ботом! Пожалуйста, откройте чат и оплатите.`)
+
+      // Starting periodic balance check after invoice is sent
+      const checkInterval = setInterval(async () => {
+        await syncBalanceFromServer()
+      }, 3000) // Check every 3 seconds
+
+      // Stopping check after 2 minutes
+      setTimeout(() => {
+        clearInterval(checkInterval)
+      }, 120000)
 
       setShowSupportModal(false)
     } catch (error: any) {
@@ -1498,9 +1464,9 @@ function GuineaPigGame() {
       const response = await fetch(`/api/get-balance/${tg.user.id}`)
       const data = await response.json()
 
-      if (response.ok) {
+      if (response.ok && data.guineaTokens !== guineaTokens) {
         setGuineaTokens(data.guineaTokens)
-        console.log("[v0] Balance synced from server:", data)
+        console.log("[v0] Balance synced from server:", data.guineaTokens, "GT")
       }
     } catch (error) {
       console.error("[v0] Failed to sync balance:", error)
@@ -2154,7 +2120,7 @@ function GuineaPigGame() {
               {[1, 5, 10, 20, 50, 100].map((amount) => (
                 <Button
                   key={amount}
-                  onClick={() => handleBuyWithStars(amount, amount)} // Pass starsAmount and gtAmount
+                  onClick={() => buyGTWithStars(amount)} // Corrected to call buyGTWithStars
                   disabled={telegramStars < amount}
                   className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 h-12 text-base font-bold"
                 >
