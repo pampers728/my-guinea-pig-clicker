@@ -626,6 +626,7 @@ function GuineaPigGame() {
   const [authToken, setAuthToken] = useState<string | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
   const [telegramUser, setTelegramUser] = useState<any>(null)
+  const [isPurchasing, setIsPurchasing] = useState(false)
 
   const selectRandomTasks = (): Task[] => {
     const shuffled = [...ALL_TASKS_POOL].sort(() => Math.random() - 0.5)
@@ -1411,7 +1412,14 @@ function GuineaPigGame() {
   // START OF UPDATES
   // Removed handleBuyWithStars, using buyGTWithStars via API
   const buyGTWithStars = async (gtAmount: number) => {
+    if (isPurchasing) {
+      console.log("[v0] Purchase already in progress, ignoring click")
+      return
+    }
+
     try {
+      setIsPurchasing(true)
+
       const tgWebApp = window.Telegram?.WebApp
       if (!tgWebApp || !tg.user) {
         alert("❌ Telegram WebApp недоступен. Откройте игру через Telegram бота @GuineaPigClicker_bot")
@@ -1454,6 +1462,10 @@ function GuineaPigGame() {
     } catch (error: any) {
       console.error("[v0] Stars purchase error:", error)
       alert(`❌ Ошибка: ${error.message}`)
+    } finally {
+      setTimeout(() => {
+        setIsPurchasing(false)
+      }, 3000)
     }
   }
 
@@ -1829,12 +1841,17 @@ function GuineaPigGame() {
                       <div className="text-3xl font-bold text-yellow-400">{pack.gt} GT</div>
                       <div className="text-sm text-gray-400">{pack.stars} ⭐</div>
                       <Button
-                        onClick={() => buyGTWithStars(pack.gt)} // Pass only GT amount
-                        className="w-full bg-blue-600 hover:bg-blue-700"
+                        onClick={() => buyGTWithStars(pack.gt)}
+                        disabled={isPurchasing}
+                        className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {pack.gt} GT
-                        <br />
-                        <span className="text-xs">{pack.gt * 2} ⭐</span>
+                        {isPurchasing ? "Отправка..." : `${pack.gt} GT`}
+                        {!isPurchasing && (
+                          <>
+                            <br />
+                            <span className="text-xs">{pack.gt * 2} ⭐</span>
+                          </>
+                        )}
                       </Button>
                     </div>
                   </Card>
@@ -2120,11 +2137,11 @@ function GuineaPigGame() {
               {[1, 5, 10, 20, 50, 100].map((amount) => (
                 <Button
                   key={amount}
-                  onClick={() => buyGTWithStars(amount)} // Corrected to call buyGTWithStars
-                  disabled={telegramStars < amount}
-                  className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 h-12 text-base font-bold"
+                  onClick={() => buyGTWithStars(amount)}
+                  disabled={telegramStars < amount || isPurchasing}
+                  className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 h-12 text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {amount} ⭐
+                  {isPurchasing ? "..." : `${amount} ⭐`}
                 </Button>
               ))}
             </div>

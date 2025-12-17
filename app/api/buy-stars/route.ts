@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import clientPromise from "@/lib/mongodb"
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 const PAYMENT_PROVIDER_TOKEN = process.env.PAYMENT_PROVIDER_TOKEN || "" // For real currencies (UAH, USD, etc.)
@@ -24,6 +25,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Bot token not configured" }, { status: 500 })
     }
 
+    if (clientPromise) {
+      try {
+        const client = await clientPromise
+        const db = client.db("guinea_pig_clicker")
+        const pendingInvoices = db.collection("pending_invoices")
+
+        // Check if user has pending invoice (created within last 5 minutes)
+        const fiveMinutesAgo = Date.now() - 5 * 60 * 1000
+        const existingInvoice = await pendingInvoices.findOne({
+          userId,
+          gtAmount,
+          currency,
+          timestamp: { $gt: fiveMinutesAgo },
+        })
+
+        if (existingInvoice) {
+          return NextResponse.json(
+            { error: "У вас уже есть активный инвойс. Пожалуйста, оплатите его или подождите 5 минут." },
+            { status: 429 },
+          )
+        }
+      } catch (dbError) {
+        console.warn("[v0] MongoDB check failed, continuing:", dbError)
+      }
+    }
+
     const packageKey = gtAmount.toString()
     if (!GT_PACKAGES[packageKey as keyof typeof GT_PACKAGES]) {
       return NextResponse.json({ error: "Invalid GT package" }, { status: 400 })
@@ -31,14 +58,15 @@ export async function POST(request: NextRequest) {
 
     const packageData = GT_PACKAGES[packageKey as keyof typeof GT_PACKAGES]
 
+    const txId = `${userId}_${gtAmount}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     const payload = JSON.stringify({
       userId,
       gtAmount,
       timestamp: Date.now(),
-      txId: `${userId}_${Date.now()}`, // unique transaction ID
+      txId,
     })
 
-    console.log("[v0] Initiating purchase:", { userId, gtAmount, currency })
+    console.log("[v0] Initiating purchase:", { userId, gtAmount, currency, txId })
 
     let invoiceData: any
 
@@ -132,8 +160,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: result.description || "Failed to send invoice" }, { status: 500 })
     }
 
-    console.log("[v0] Invoice sent successfully:", { currency, amount: invoiceData.prices[0].amount })
-    return NextResponse.json({ success: true, message: "Invoice sent" })
+    if (clientPromise) {
+      try {
+        const client = await clientPromise
+        const db = client.db("guinea_pig_clicker")
+        const pendingInvoices = db.collection("pending_invoices")
+
+        await pendingInvoices.insertOne({
+          userId,
+          gtAmount,
+          currency,
+          txId,
+          timestamp: Date.now(),
+          payload,
+        })
+
+        // Clean up old invoices (older than 10 minutes)
+        const tenMinutesAgo = Date.now() - 10 * 60 * 1000
+        await pendingInvoices.deleteMany({
+          timestamp: { $lt: tenMinutesAgo },
+        })
+      } catch (dbError) {
+        console.warn("[v0] Failed to store pending invoice:", dbError)
+      }
+    }
+
+    console.log("[v0] Invoice sent successfully:", { currency, amount: invoiceData.prices[0].amount, txId })
+    return NextResponse.json({ success: true, message: "Invoice sent", txId })
   } catch (error) {
     console.error("[v0] Buy stars error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

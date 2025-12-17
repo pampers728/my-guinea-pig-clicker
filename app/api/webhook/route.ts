@@ -24,13 +24,19 @@ export async function POST(request: NextRequest) {
 
       // Parse payload to get purchase info
       const payload = JSON.parse(payment.invoice_payload)
-      const { gtAmount } = payload
+      const { gtAmount, txId } = payload
 
       if (process.env.MONGODB_URI) {
         const client = await clientPromise
         if (client) {
           const db = client.db("guinea_pig_clicker")
           const users = db.collection("users")
+          const pendingInvoices = db.collection("pending_invoices")
+
+          if (txId) {
+            await pendingInvoices.deleteOne({ txId })
+            console.log("[v0] Pending invoice removed:", txId)
+          }
 
           await users.updateOne(
             { telegramId: userId.toString() },
