@@ -33,19 +33,25 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     const checkTelegram = () => {
-      if (typeof window === "undefined") return
+      console.log("[v0] Checking Telegram WebApp availability")
+
+      if (typeof window === "undefined") {
+        console.log("[v0] Window is undefined")
+        return
+      }
 
       const WebApp = (window as any).Telegram?.WebApp
 
-      // Check if opened inside Telegram
-      if (!WebApp || !WebApp.initData) {
-        console.log("[v0] Not opened in Telegram WebApp")
+      if (!WebApp) {
+        console.log("[v0] Telegram.WebApp not found")
         setApi((s) => ({ ...s, isAvailable: false }))
         setIsChecking(false)
         return
       }
 
-      // Initialize Telegram WebApp
+      const hasInitData = WebApp.initData && WebApp.initData.length > 0
+      console.log("[v0] Has initData:", hasInitData)
+
       try {
         WebApp.ready()
         console.log("[v0] Telegram WebApp ready called")
@@ -61,7 +67,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
 
       const apiObj: WebAppApi = {
-        isAvailable: true,
+        isAvailable: hasInitData,
         initDataUnsafe: WebApp.initDataUnsafe,
         user: WebApp.initDataUnsafe?.user,
         ready: () => WebApp.ready?.(),
@@ -79,12 +85,22 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       setApi(apiObj)
       setIsChecking(false)
-      console.log("[v0] Telegram WebApp initialized", { user: apiObj.user })
+      console.log("[v0] Telegram WebApp initialized", {
+        isAvailable: apiObj.isAvailable,
+        user: apiObj.user,
+      })
     }
 
-    // Wait a bit for Telegram SDK to load
-    const timeout = setTimeout(checkTelegram, 100)
-    return () => clearTimeout(timeout)
+    const timeout = setTimeout(checkTelegram, 300)
+    const fallbackTimeout = setTimeout(() => {
+      console.log("[v0] Fallback: forcing check complete")
+      setIsChecking(false)
+    }, 2000)
+
+    return () => {
+      clearTimeout(timeout)
+      clearTimeout(fallbackTimeout)
+    }
   }, [])
 
   if (isChecking) {

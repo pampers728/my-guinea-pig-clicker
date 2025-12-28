@@ -92,3 +92,11 @@ export function getLevelRewards(level: number): { pig?: string; bonus?: string }
   }
   return rewards[level] || {}
 }
+
+export function getCurrentMaxEnergy(level: number): number {
+  return 1000 + level * 50
+}
+
+export function getCurrentCarrotsPerClick(level: number): number {
+  return 1 + Math.floor(level / 5)
+}

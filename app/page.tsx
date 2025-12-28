@@ -22,7 +22,14 @@ import {
 } from "lucide-react"
 import { useTelegram } from "@/components/TelegramProvider"
 import { useTranslation, type Language } from "@/lib/i18n"
-import { PIGS, getPigById, calculateXPNeeded, getLevelRewards } from "@/lib/pigs"
+import {
+  PIGS,
+  getPigById,
+  calculateXPNeeded,
+  getLevelRewards,
+  getCurrentMaxEnergy,
+  getCurrentCarrotsPerClick,
+} from "@/lib/pigs"
 // Dynamically import TonConnect to avoid SSR issues and potential runtime errors
 const TonConnectModule: any = null
 // </CHANGE> Removed direct import and dynamic import from here
@@ -450,16 +457,6 @@ export default function Home() {
   }, [carrots, guineaTokens, level, xp, unlockedPigs, activePigId, totalClicks])
 
   useEffect(() => {
-    const maxEnergy = getCurrentMaxEnergy()
-    if (energy < maxEnergy) {
-      const interval = setInterval(() => {
-        setEnergy((prev) => Math.min(prev + 1, maxEnergy))
-      }, 1000)
-      return () => clearInterval(interval)
-    }
-  }, [energy, level])
-
-  useEffect(() => {
     if (miners.length === 0) return
     const interval = setInterval(() => {
       const totalIncome = calculateTotalIncome()
@@ -471,18 +468,51 @@ export default function Home() {
     return () => clearInterval(interval)
   }, [miners])
 
-  const getCurrentMaxEnergy = () => 1000 + level * 50
-  const getCurrentCarrotsPerClick = () => 1 + Math.floor(level / 5)
+  useEffect(() => {
+    const maxEnergy = getCurrentMaxEnergy(level)
+    if (energy < maxEnergy) {
+      const interval = setInterval(() => {
+        setEnergy((prev) => Math.min(prev + 1, maxEnergy))
+      }, 1000)
+      return () => clearInterval(interval)
+    }
+  }, [energy, level])
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (isLoading) {
+        console.log("[v0] Loading timeout - forcing load complete")
+        setIsLoading(false)
+      }
+    }, 5000)
+    return () => clearTimeout(timeout)
+  }, [isLoading])
 
   const loadPlayerData = async () => {
-    if (!tg.user) return
+    if (!tg.user) {
+      console.log("[v0] No Telegram user, skipping load")
+      setIsLoading(false)
+      return
+    }
+
+    console.log("[v0] Loading player data for user:", tg.user.id)
+
     try {
       const res = await fetch("/api/player/load", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: tg.user.id }),
       })
+
+      if (!res.ok) {
+        console.error("[v0] Failed to load player:", res.status)
+        setIsLoading(false)
+        return
+      }
+
       const data = await res.json()
+      console.log("[v0] Player data loaded:", data)
+
       if (data.player) {
         setCarrots(data.player.score || 0)
         setGuineaTokens(data.player.guineaTokens || 0)
@@ -499,6 +529,7 @@ export default function Home() {
     } catch (error) {
       console.error("[v0] Failed to load player data:", error)
     } finally {
+      console.log("[v0] Load complete, setting isLoading to false")
       setIsLoading(false)
     }
   }
@@ -547,7 +578,7 @@ export default function Home() {
   const handleGuineaPigClick = () => {
     const clickCost = 1
     if (energy >= clickCost) {
-      const carrotsGained = getCurrentCarrotsPerClick()
+      const carrotsGained = getCurrentCarrotsPerClick(level)
       setCarrots((prev) => prev + carrotsGained)
       setEnergy((prev) => prev - clickCost)
       setTotalClicks((prev) => prev + 1)
@@ -822,14 +853,14 @@ export default function Home() {
               <div className="flex items-center justify-between bg-black/30 rounded-full p-2">
                 <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
                 <div className="flex-1 mx-2 sm:mx-3">
-                  <Progress value={(energy / getCurrentMaxEnergy()) * 100} className="h-2" />
+                  <Progress value={(energy / getCurrentMaxEnergy(level)) * 100} className="h-2" />
                 </div>
                 <span className="text-xs sm:text-sm font-medium">
-                  {energy}/{getCurrentMaxEnergy()}
+                  {energy}/{getCurrentMaxEnergy(level)}
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-gray-400">
-                {t("game.tap_power")} = {getCurrentCarrotsPerClick()} 🥕
+                {t("game.tap_power")} = {getCurrentCarrotsPerClick(level)} 🥕
               </p>
             </div>
           </div>
