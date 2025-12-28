@@ -3,56 +3,56 @@ import { NextResponse } from "next/server"
 export async function GET() {
   const packages = [
     {
-      gtAmount: 10,
-      prices: {
-        stars: 5, // 10 GT = 5 Stars
-        uah: 20,
-        usd: 1,
-      },
-      popular: false,
-    },
-    {
-      gtAmount: 50,
-      prices: {
-        stars: 20,
-        uah: 80,
-        usd: 3,
-      },
-      popular: false,
-    },
-    {
       gtAmount: 100,
       prices: {
-        stars: 35,
-        uah: 150,
-        usd: 5,
+        stars: 50, // 100 GT = 50 Stars (10 GT = 5 Stars)
+        uah: 200, // ~5.5 USD
+        usd: 6,
       },
-      popular: true,
+      popular: false,
     },
     {
       gtAmount: 500,
       prices: {
-        stars: 150,
-        uah: 700,
-        usd: 20,
+        stars: 250,
+        uah: 900,
+        usd: 25,
       },
-      popular: false,
+      popular: true,
     },
     {
       gtAmount: 1000,
       prices: {
-        stars: 280,
-        uah: 1400,
-        usd: 40,
+        stars: 500,
+        uah: 1700,
+        usd: 47,
+      },
+      popular: false,
+    },
+    {
+      gtAmount: 3000,
+      prices: {
+        stars: 1400,
+        uah: 4800,
+        usd: 133,
       },
       popular: false,
     },
     {
       gtAmount: 5000,
       prices: {
-        stars: 1300,
-        uah: 6500,
-        usd: 180,
+        stars: 2300,
+        uah: 7800,
+        usd: 217,
+      },
+      popular: false,
+    },
+    {
+      gtAmount: 7000, // Максимальный пакет
+      prices: {
+        stars: 3200,
+        uah: 10900,
+        usd: 302,
       },
       popular: false,
     },

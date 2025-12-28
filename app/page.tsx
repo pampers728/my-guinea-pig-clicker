@@ -10,26 +10,21 @@ import {
   Copy,
   Zap,
   Pickaxe,
-  Trophy,
   Users,
   Share2,
   UserPlus,
   Coins,
-  CheckCircle,
-  Heart,
-  Youtube,
-  Music,
-  Info,
-  ShoppingCart,
   Crown,
-  Wallet,
   HomeIcon,
+  Globe,
+  Lock,
+  ShoppingBag,
 } from "lucide-react"
-import { TelegramProvider, useTelegram } from "@/components/TelegramProvider"
+import { useTelegram } from "@/components/TelegramProvider"
 import { useTranslation, type Language } from "@/lib/i18n"
-import type { PlayerData } from "@/types/game"
+import { PIGS, getPigById, calculateXPNeeded, getLevelRewards } from "@/lib/pigs"
 // Dynamically import TonConnect to avoid SSR issues and potential runtime errors
-let TonConnectModule: any = null
+const TonConnectModule: any = null
 // </CHANGE> Removed direct import and dynamic import from here
 
 interface TaskReward {
@@ -381,1214 +376,340 @@ const ALL_TASKS_POOL: Omit<Task, "progress" | "completed" | "claimed">[] = [
 ]
 
 export default function Home() {
-  return (
-    <TelegramProvider>
-      <GameContent />
-    </TelegramProvider>
-  )
-}
-
-function GameContent() {
   const tg = useTelegram()
-
   const [language, setLanguage] = useState<Language>("en")
   const { t } = useTranslation(language)
 
-  const [playerData, setPlayerData] = useState<PlayerData | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-
-  // Старые состояния остаются для совместимости UI
   const [carrots, setCarrots] = useState(0)
   const [guineaTokens, setGuineaTokens] = useState(0)
-  const [telegramStars, setTelegramStars] = useState(0) // Declare telegramStars
+  const [telegramStars, setTelegramStars] = useState(0)
   const [energy, setEnergy] = useState(1000)
-  const [score, setScore] = useState(0)
-  const [xp, setXP] = useState(0)
+  const [totalClicks, setTotalClicks] = useState(0)
   const [level, setLevel] = useState(1)
-  const [carrotsPerClickLevel, setCarrotsPerClickLevel] = useState<number>(1)
-  const [maxEnergyLevel, setMaxEnergyLevel] = useState<number>(1)
-  const [activeTab, setActiveTab] = useState<string>("main")
-  const [referralCode, setReferralCode] = useState<string>("")
-  const [showSupportModal, setShowSupportModal] = useState<boolean>(false)
-  const [showConvertModal, setShowConvertModal] = useState<boolean>(false)
-  const [showCryptoPaymentModal, setShowCryptoPaymentModal] = useState<boolean>(false)
+  const [xp, setXP] = useState(0)
+
+  const [activePigId, setActivePigId] = useState("white_basic")
+  const [unlockedPigs, setUnlockedPigs] = useState<string[]>(["white_basic"])
+  const [showPigsModal, setShowPigsModal] = useState(false)
+  const [showLanguageModal, setShowLanguageModal] = useState(false)
+
+  const [activeTab, setActiveTab] = useState("main")
+  const [miners, setMiners] = useState<any[]>([])
+  const [friends, setFriends] = useState<any[]>([])
+  const [leaderboard, setLeaderboard] = useState<any[]>([])
   const [leaderboardPeriod, setLeaderboardPeriod] = useState<"daily" | "weekly" | "alltime">("daily")
-  const [miningSecondsLeft, setMiningSecondsLeft] = useState<number>(60)
-  const [lastMiningTime, setLastMiningTime] = useState<number>(Date.now())
-  const [taskProgress, setTaskProgress] = useState<TaskProgress>({
-    clicks: 0,
-    carrots_earned: 0,
-    carrots_converted: 0,
-    gt_earned: 0,
-    gt_spent: 0,
-    stars_earned: 0,
-    stars_spent: 0,
-    gt_packages_bought: 0,
-    miners_bought: 0,
-    mining_collected: 0,
-    carrots_upgrades: 0,
-    energy_upgrades: 0,
-    total_gt_spent_upgrades: 0,
-    friends_invited: 0,
-    referral_bonuses: 0,
-    carrots_from_friends: 0,
-  })
-  const [miners, setMiners] = useState<Miner[]>([
-    {
-      id: "baby_miner",
-      name: "Baby Miner",
-      type: "starter",
-      level: 0,
-      icon: "👶",
-      levels: [
-        { lvl: 1, priceGT: 25, priceStars: 50, incomePerHour: 0.002 },
-        { lvl: 2, priceGT: 40, priceStars: 80, incomePerHour: 0.004 },
-        { lvl: 3, priceGT: 60, priceStars: 120, incomePerHour: 0.006 },
-        { lvl: 4, priceGT: 90, priceStars: 180, incomePerHour: 0.009 },
-        { lvl: 5, priceGT: 120, priceStars: 240, incomePerHour: 0.012 },
-      ],
-    },
-    {
-      id: "carrot_miner",
-      name: "Carrot Miner",
-      type: "farm",
-      level: 0,
-      icon: "🥕",
-      levels: [
-        { lvl: 1, priceGT: 50, priceStars: 100, incomePerHour: 0.005 },
-        { lvl: 2, priceGT: 70, priceStars: 140, incomePerHour: 0.008 },
-        { lvl: 3, priceGT: 100, priceStars: 200, incomePerHour: 0.012 },
-        { lvl: 4, priceGT: 150, priceStars: 300, incomePerHour: 0.018 },
-        { lvl: 5, priceGT: 200, priceStars: 400, incomePerHour: 0.025 },
-      ],
-    },
-    {
-      id: "carrot_harvester",
-      name: "Carrot Harvester",
-      type: "farm",
-      level: 0,
-      icon: "🚜",
-      levels: [
-        { lvl: 1, priceGT: 100, priceStars: 200, incomePerHour: 0.015 },
-        { lvl: 2, priceGT: 150, priceStars: 300, incomePerHour: 0.025 },
-        { lvl: 3, priceGT: 220, priceStars: 440, incomePerHour: 0.038 },
-        { lvl: 4, priceGT: 320, priceStars: 640, incomePerHour: 0.055 },
-        { lvl: 5, priceGT: 450, priceStars: 900, incomePerHour: 0.075 },
-      ],
-    },
-    {
-      id: "mini_farm",
-      name: "Mini Farm",
-      type: "farm",
-      level: 0,
-      icon: "🏠",
-      levels: [
-        { lvl: 1, priceGT: 80, priceStars: 160, incomePerHour: 0.01 },
-        { lvl: 2, priceGT: 120, priceStars: 240, incomePerHour: 0.018 },
-        { lvl: 3, priceGT: 180, priceStars: 360, incomePerHour: 0.028 },
-        { lvl: 4, priceGT: 270, priceStars: 540, incomePerHour: 0.04 },
-        { lvl: 5, priceGT: 350, priceStars: 700, incomePerHour: 0.05 },
-      ],
-    },
-    {
-      id: "crystal_wheel",
-      name: "Crystal Wheel",
-      type: "magic",
-      level: 0,
-      icon: "💎",
-      levels: [
-        { lvl: 1, priceGT: 200, priceStars: 400, incomePerHour: 0.03 },
-        { lvl: 2, priceGT: 300, priceStars: 600, incomePerHour: 0.05 },
-        { lvl: 3, priceGT: 450, priceStars: 900, incomePerHour: 0.075 },
-        { lvl: 4, priceGT: 650, priceStars: 1300, incomePerHour: 0.11 },
-        { lvl: 5, priceGT: 900, priceStars: 1800, incomePerHour: 0.15 },
-      ],
-    },
-    {
-      id: "data_center",
-      name: "Data Center",
-      type: "infrastructure",
-      level: 0,
-      icon: "💾",
-      levels: [
-        { lvl: 1, priceGT: 150, priceStars: 300, incomePerHour: 0.02 },
-        { lvl: 2, priceGT: 225, priceStars: 450, incomePerHour: 0.035 },
-        { lvl: 3, priceGT: 340, priceStars: 680, incomePerHour: 0.055 },
-        { lvl: 4, priceGT: 480, priceStars: 960, incomePerHour: 0.08 },
-        { lvl: 5, priceGT: 600, priceStars: 1200, incomePerHour: 0.1 },
-      ],
-    },
-    {
-      id: "quantum_guinea",
-      name: "Quantum Guinea",
-      type: "advanced",
-      level: 0,
-      icon: "⚛️",
-      levels: [
-        { lvl: 1, priceGT: 350, priceStars: 700, incomePerHour: 0.06 },
-        { lvl: 2, priceGT: 525, priceStars: 1050, incomePerHour: 0.1 },
-        { lvl: 3, priceGT: 800, priceStars: 1600, incomePerHour: 0.15 },
-        { lvl: 4, priceGT: 1200, priceStars: 2400, incomePerHour: 0.22 },
-        { lvl: 5, priceGT: 1700, priceStars: 3400, incomePerHour: 0.3 },
-      ],
-    },
-    {
-      id: "galactic_farm",
-      name: "Galactic Farm",
-      type: "space",
-      level: 0,
-      icon: "🌌",
-      levels: [
-        { lvl: 1, priceGT: 500, priceStars: 1000, incomePerHour: 0.1 },
-        { lvl: 2, priceGT: 750, priceStars: 1500, incomePerHour: 0.17 },
-        { lvl: 3, priceGT: 1100, priceStars: 2200, incomePerHour: 0.25 },
-        { lvl: 4, priceGT: 1650, priceStars: 3300, incomePerHour: 0.35 },
-        { lvl: 5, priceGT: 2300, priceStars: 4600, incomePerHour: 0.5 },
-      ],
-    },
-    {
-      id: "ai_miner",
-      name: "AI Miner",
-      type: "ai",
-      level: 0,
-      icon: "🤖",
-      levels: [
-        { lvl: 1, priceGT: 800, priceStars: 1600, incomePerHour: 0.15 },
-        { lvl: 2, priceGT: 1200, priceStars: 2400, incomePerHour: 0.25 },
-        { lvl: 3, priceGT: 1800, priceStars: 3600, incomePerHour: 0.4 },
-        { lvl: 4, priceGT: 2700, priceStars: 5400, incomePerHour: 0.6 },
-        { lvl: 5, priceGT: 3800, priceStars: 7600, incomePerHour: 0.85 },
-      ],
-    },
-    {
-      id: "golden_reactor",
-      name: "Golden Reactor",
-      type: "energy",
-      level: 0,
-      icon: "⚡",
-      levels: [
-        { lvl: 1, priceGT: 1000, priceStars: 2000, incomePerHour: 0.2 },
-        { lvl: 2, priceGT: 1500, priceStars: 3000, incomePerHour: 0.35 },
-        { lvl: 3, priceGT: 2250, priceStars: 4500, incomePerHour: 0.55 },
-        { lvl: 4, priceGT: 3400, priceStars: 6800, incomePerHour: 0.8 },
-        { lvl: 5, priceGT: 4800, priceStars: 9600, incomePerHour: 1.1 },
-      ],
-    },
-    {
-      id: "afb_industry",
-      name: "AFB Industry",
-      type: "industrial",
-      level: 0,
-      icon: "🏭",
-      levels: [
-        { lvl: 1, priceGT: 1500, priceStars: 3000, incomePerHour: 0.3 },
-        { lvl: 2, priceGT: 2250, priceStars: 4500, incomePerHour: 0.5 },
-        { lvl: 3, priceGT: 3400, priceStars: 6800, incomePerHour: 0.75 },
-        { lvl: 4, priceGT: 5000, priceStars: 10000, incomePerHour: 1.1 },
-        { lvl: 5, priceGT: 7000, priceStars: 14000, incomePerHour: 1.5 },
-      ],
-    },
-    {
-      id: "inferno_core",
-      name: "Inferno Core",
-      type: "epic",
-      level: 0,
-      icon: "🔥",
-      levels: [
-        { lvl: 1, priceGT: 2000, priceStars: 4000, incomePerHour: 0.4 },
-        { lvl: 2, priceGT: 3000, priceStars: 6000, incomePerHour: 0.7 },
-        { lvl: 3, priceGT: 4500, priceStars: 9000, incomePerHour: 1.0 },
-        { lvl: 4, priceGT: 6500, priceStars: 13000, incomePerHour: 1.5 },
-        { lvl: 5, priceGT: 9000, priceStars: 18000, incomePerHour: 2.0 },
-      ],
-    },
-    {
-      id: "quantum_singularity",
-      name: "Quantum Singularity",
-      type: "legendary",
-      level: 0,
-      icon: "🌟",
-      levels: [
-        { lvl: 1, priceGT: 5000, priceStars: 10000, incomePerHour: 0.6 },
-        { lvl: 2, priceGT: 5750, priceStars: 11500, incomePerHour: 1.0 },
-        { lvl: 3, priceGT: 6500, priceStars: 13000, incomePerHour: 1.5 },
-        { lvl: 4, priceGT: 7250, priceStars: 14500, incomePerHour: 2.2 },
-        { lvl: 5, priceGT: 7500, priceStars: 15000, incomePerHour: 3.0 },
-      ],
-    },
-  ])
-  const [weeklyTasks, setWeeklyTasks] = useState<Task[]>([])
-  const [lastTaskRotation, setLastTaskRotation] = useState<number>(Date.now())
-  const [friends, setFriends] = useState<Friend[]>([])
-  const [leaderboardData, setLeaderboardData] = useState<{
-    daily: LeaderboardPlayer[]
-    weekly: LeaderboardPlayer[]
-    alltime: LeaderboardPlayer[]
-  }>({
-    daily: [],
-    weekly: [],
-    alltime: [],
-  })
-
-  const [tonWallet, setTonWallet] = useState<any>(null)
-  const [tonConnector, setTonConnector] = useState<any>(null) // Use 'any' for TonConnect instance type
-  const [tonPaymentStatus, setTonPaymentStatus] = useState<string>("")
-  const [manualWalletAddress, setManualWalletAddress] = useState<string>("")
-  const [showManualWallet, setShowManualWallet] = useState<boolean>(false)
-
-  const [authToken, setAuthToken] = useState<string | null>(null)
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
-  const [telegramUser, setTelegramUser] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [showConvertModal, setShowConvertModal] = useState(false)
+  const [showSupportModal, setShowSupportModal] = useState(false)
   const [isPurchasing, setIsPurchasing] = useState(false)
-
-  const selectRandomTasks = (): Task[] => {
-    const shuffled = [...ALL_TASKS_POOL].sort(() => Math.random() - 0.5)
-    const selected = shuffled.slice(0, 3)
-    return selected.map((task) => ({
-      ...task,
-      progress: 0,
-      completed: false,
-      claimed: false,
-    }))
-  }
-
-  const checkAndRotateTasks = () => {
-    const oneWeek = 7 * 24 * 60 * 60 * 1000
-    const now = Date.now()
-    if (now - lastTaskRotation >= oneWeek) {
-      const newTasks = selectRandomTasks()
-      setWeeklyTasks(newTasks)
-      setLastTaskRotation(now)
-      setTaskProgress({
-        clicks: 0,
-        carrots_earned: 0,
-        carrots_converted: 0,
-        gt_earned: 0,
-        gt_spent: 0,
-        stars_earned: 0,
-        stars_spent: 0,
-        gt_packages_bought: 0,
-        miners_bought: 0,
-        mining_collected: 0,
-        carrots_upgrades: 0,
-        energy_upgrades: 0,
-        total_gt_spent_upgrades: 0,
-        friends_invited: 0,
-        referral_bonuses: 0,
-        carrots_from_friends: 0,
-      })
-    }
-  }
+  const [referralLink, setReferralLink] = useState("")
+  const [referralBonus, setReferralBonus] = useState(0)
+  const [referralsCount, setReferralsCount] = useState(0)
 
   useEffect(() => {
-    const loadGameData = () => {
-      try {
-        // Load auth token from local storage
-        const savedToken = localStorage.getItem("authToken")
-        if (savedToken) {
-          setAuthToken(savedToken)
-          setIsAuthenticated(true)
-        }
+    if (tg.isAvailable && tg.user) {
+      const userLang = tg.user.language_code || "en"
+      const supportedLang: Language = [
+        "en",
+        "ru",
+        "uk",
+        "kk",
+        "pt",
+        "be",
+        "es",
+        "de",
+        "pl",
+        "fr",
+        "zh",
+        "ja",
+        "ko",
+        "tr",
+      ].includes(userLang)
+        ? (userLang as Language)
+        : "en"
+      setLanguage(supportedLang)
 
-        const savedData = localStorage.getItem("guineaPigGameData")
-        if (savedData) {
-          const data = window.JSON ? window.JSON.parse(savedData) : JSON.parse(savedData)
-          setCarrots(data.carrots || 0)
-          setGuineaTokens(data.guineaTokens || 0)
-          setTelegramStars(data.telegramStars || 0) // Use setTelegramStars
-          setCarrotsPerClickLevel(data.carrotsPerClickLevel || 1)
-          setMaxEnergyLevel(data.maxEnergyLevel || 1)
-          setEnergy(data.energy || 1000)
-          if (data.miners) setMiners(data.miners)
-          if (data.weeklyTasks) setWeeklyTasks(data.weeklyTasks)
-          if (data.friends) setFriends(data.friends)
-          if (data.taskProgress) setTaskProgress(data.taskProgress)
-          if (data.lastTaskRotation) setLastTaskRotation(data.lastTaskRotation)
-          if (data.lastMiningTime) setLastMiningTime(data.lastMiningTime)
-          // Load TON wallet data
-          if (data.tonWallet) {
-            setTonWallet(data.tonWallet)
-            setManualWalletAddress(data.tonWallet.account?.address || "")
-          }
-        }
+      const userId = tg.user.id
+      setReferralLink(`https://t.me/GuineaPigClicker_bot?start=${userId}`)
 
-        const parsedData = savedData ? (window.JSON ? window.JSON.parse(savedData) : JSON.JSON.parse(savedData)) : null
-        if (!parsedData || !parsedData.weeklyTasks || parsedData.weeklyTasks.length === 0) {
-          const initialTasks = selectRandomTasks()
-          setWeeklyTasks(initialTasks)
-          setLastTaskRotation(Date.now())
-        }
-
-        const savedReferralCode = localStorage.getItem("userReferralCode")
-        if (savedReferralCode) {
-          setReferralCode(savedReferralCode)
-        } else {
-          const newCode = generateReferralCode()
-          setReferralCode(newCode)
-          localStorage.setItem("userReferralCode", newCode)
-        }
-      } catch (error) {
-        console.error("[v0] Error loading game data:", error)
+      loadPlayerData()
+      const startParam = tg.initDataUnsafe?.start_parameter
+      if (startParam) {
+        handleReferral(Number.parseInt(startParam))
       }
     }
-
-    const urlParams = new URLSearchParams(window.location.search)
-    const startParam = urlParams.get("start") || urlParams.get("tgWebAppStartParam")
-    if (startParam && startParam.startsWith("ref_")) {
-      const referrerCode = startParam.replace("ref_", "")
-      localStorage.setItem("referrerCode", referrerCode)
-      console.log("[v0] Referrer code from bot:", referrerCode)
-    }
-
-    // Telegram WebApp initialization
-    if (typeof window !== "undefined" && window.Telegram?.WebApp) {
-      const tg = window.Telegram.WebApp
-      tg.ready()
-      tg.expand() // Expand the Web App to fill the screen
-      console.log("[v0] Telegram WebApp ready")
-    }
-
-    loadGameData()
-    checkAndRotateTasks()
-    authenticateUser()
-  }, [])
-
-  // Moved TonConnect initialization inside useEffect
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      import("@tonconnect/sdk")
-        .then((module) => {
-          const TonConnect = module.TonConnect // Get TonConnect class from the module
-          TonConnectModule = module // Assign the whole module if needed elsewhere, though not currently used
-          try {
-            const connector = new TonConnect({
-              manifestUrl: `${window.location.origin}/tonconnect-manifest.json`,
-            })
-            setTonConnector(connector)
-            console.log("[v0] TonConnect initialized successfully")
-
-            connector.onStatusChange((status: any) => {
-              if (status) {
-                setTonWallet(status)
-                if (status.account?.address) {
-                  setManualWalletAddress(status.account.address)
-                  console.log("[v0] Wallet connected:", status.account.address)
-                }
-              } else {
-                setTonWallet(null)
-                console.log("[v0] Wallet disconnected")
-              }
-            })
-          } catch (e: any) {
-            console.error("[v0] Failed to initialize TonConnect:", e.message)
-          }
-        })
-        .catch((err) => {
-          console.error("[v0] Failed to load TonConnect SDK:", err.message) // Log error if SDK fails to load
-        })
-    }
-  }, [])
-  // </CHANGE>
+  }, [tg.isAvailable])
 
   useEffect(() => {
-    if (isAuthenticated) {
-      const syncInterval = setInterval(syncDataWithServer, 30000)
-      return () => clearInterval(syncInterval)
-    }
-  }, [isAuthenticated, authToken, carrots, guineaTokens, telegramStars, miners, taskProgress, weeklyTasks])
-
-  useEffect(() => {
-    const interval = setInterval(
-      () => {
-        checkAndRotateTasks()
-      },
-      60 * 60 * 1000,
-    )
+    if (!tg.isAvailable || !tg.user) return
+    const interval = setInterval(() => {
+      savePlayerData()
+    }, 10000)
     return () => clearInterval(interval)
-  }, [lastTaskRotation])
+  }, [carrots, guineaTokens, level, xp, unlockedPigs, activePigId, totalClicks])
 
   useEffect(() => {
-    const saveGameData = () => {
-      try {
-        const gameData = {
-          carrots,
+    const maxEnergy = getCurrentMaxEnergy()
+    if (energy < maxEnergy) {
+      const interval = setInterval(() => {
+        setEnergy((prev) => Math.min(prev + 1, maxEnergy))
+      }, 1000)
+      return () => clearInterval(interval)
+    }
+  }, [energy, level])
+
+  useEffect(() => {
+    if (miners.length === 0) return
+    const interval = setInterval(() => {
+      const totalIncome = calculateTotalIncome()
+      if (totalIncome > 0) {
+        const incomePerSecond = totalIncome / 3600
+        setGuineaTokens((prev) => prev + incomePerSecond)
+      }
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [miners])
+
+  const getCurrentMaxEnergy = () => 1000 + level * 50
+  const getCurrentCarrotsPerClick = () => 1 + Math.floor(level / 5)
+
+  const loadPlayerData = async () => {
+    if (!tg.user) return
+    try {
+      const res = await fetch("/api/player/load", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: tg.user.id }),
+      })
+      const data = await res.json()
+      if (data.player) {
+        setCarrots(data.player.score || 0)
+        setGuineaTokens(data.player.guineaTokens || 0)
+        setTelegramStars(data.player.telegramStars || 0)
+        setLevel(data.player.level || 1)
+        setXP(data.player.xp || 0)
+        setTotalClicks(data.player.totalClicks || 0)
+        setActivePigId(data.player.activePigId || "white_basic")
+        setUnlockedPigs(data.player.pigs?.map((p: any) => p.id) || ["white_basic"])
+        setReferralBonus(data.player.referralBonus || 0)
+        setReferralsCount(data.player.referralsCount || 0)
+        setMiners(data.player.miners || initializeMiners())
+      }
+    } catch (error) {
+      console.error("[v0] Failed to load player data:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const savePlayerData = async () => {
+    if (!tg.user || isSaving) return
+    setIsSaving(true)
+    try {
+      await fetch("/api/player/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: tg.user.id,
+          username: tg.user.username,
+          score: carrots,
           guineaTokens,
           telegramStars,
-          carrotsPerClickLevel,
-          maxEnergyLevel,
-          energy,
+          level,
+          xp,
+          totalClicks,
+          activePigId,
+          pigs: unlockedPigs.map((id) => ({ id, rarity: getPigById(id)?.rarity })),
           miners,
-          weeklyTasks,
-          friends,
-          taskProgress,
-          lastTaskRotation,
-          lastMiningTime,
-          // Save TON wallet data
-          tonWallet: tonWallet ? { ...tonWallet, account: { address: manualWalletAddress } } : null,
-          lastSaved: new Date().toISOString(),
-        }
-        const jsonString = window.JSON ? window.JSON.stringify(gameData) : JSON.stringify(gameData)
-        localStorage.setItem("guineaPigGameData", jsonString)
-      } catch (error) {
-        console.error("[v0] Error saving game data:", error)
-      }
-    }
-    const debounceTimer = setTimeout(saveGameData, 1000)
-    return () => clearTimeout(debounceTimer)
-  }, [
-    carrots,
-    guineaTokens,
-    telegramStars,
-    carrotsPerClickLevel,
-    maxEnergyLevel,
-    energy,
-    miners,
-    weeklyTasks,
-    friends,
-    taskProgress,
-    lastTaskRotation,
-    lastMiningTime,
-    tonWallet, // Include tonWallet in dependencies
-    manualWalletAddress, // Include manualWalletAddress in dependencies
-  ])
-
-  useEffect(() => {
-    const initializeGame = async () => {
-      if (!tg.isAvailable || !tg.user?.id) {
-        console.log("[v0] Telegram WebApp not available or user not found")
-        setIsLoading(false)
-        return
-      }
-
-      try {
-        const tgLang = tg.user?.language_code || "en"
-        const supportedLang: Language = [
-          "en",
-          "ru",
-          "uk",
-          "kk",
-          "pt",
-          "be",
-          "es",
-          "de",
-          "pl",
-          "fr",
-          "zh",
-          "ja",
-          "ko",
-          "tr",
-        ].includes(tgLang as Language)
-          ? (tgLang as Language)
-          : "en"
-        setLanguage(supportedLang)
-
-        // Загружаем данные игрока
-        const response = await fetch(`/api/player/load`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: tg.user.id,
-            username: tg.user.username,
-          }),
-        })
-
-        if (response.ok) {
-          const data: PlayerData = await response.json()
-          setPlayerData(data)
-
-          // Синхронизируем с локальными состояниями для UI
-          setCarrots(data.carrots)
-          setGuineaTokens(data.guineaTokens)
-          setScore(data.score)
-          setXP(data.xp)
-          setLevel(data.level)
-          setCarrotsPerClickLevel(data.carrotsPerClickLevel)
-          setMaxEnergyLevel(data.maxEnergyLevel)
-          setEnergy(data.energy)
-          setMiners(data.miners)
-          setWeeklyTasks(data.weeklyTasks)
-          setFriends(data.friends)
-          setTaskProgress(data.taskProgress)
-          setLastTaskRotation(data.lastTaskRotation)
-          setLastMiningTime(data.lastMiningTime)
-
-          console.log("[v0] Player data loaded from MongoDB:", data)
-        } else {
-          console.error("[v0] Failed to load player data")
-        }
-      } catch (error) {
-        console.error("[v0] Error initializing game:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    initializeGame()
-  }, [tg.isAvailable, tg.user])
-
-  const authenticateUser = async () => {
-    try {
-      if (typeof window !== "undefined" && (window as any).Telegram?.WebApp) {
-        const tg = (window as any).Telegram.WebApp
-        const user = tg.initDataUnsafe?.user
-
-        if (user) {
-          setTelegramUser(user)
-
-          const response = await fetch("/api/auth/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              telegramId: user.id,
-              username: user.username || `user${user.id}`,
-              firstName: user.first_name || "",
-              lastName: user.last_name || "",
-              photoUrl: user.photo_url || "",
-            }),
-          })
-
-          const data = await response.json()
-
-          if (response.status === 503) {
-            console.warn("[v0] Database not configured - playing in offline mode")
-            setIsAuthenticated(false)
-            return
-          }
-
-          if (data.success && data.token) {
-            setAuthToken(data.token)
-            setIsAuthenticated(true)
-            localStorage.setItem("authToken", data.token)
-            console.log("[v0] User authenticated:", data.user)
-          }
-        }
-      }
-    } catch (error) {
-      console.error("[v0] Authentication error:", error)
-      setIsAuthenticated(false)
-    }
-  }
-
-  const syncDataWithServer = async () => {
-    if (!authToken || !isAuthenticated) return
-
-    try {
-      const gameData = {
-        carrots,
-        guineaTokens,
-        telegramStars,
-        carrotsPerClickLevel,
-        maxEnergyLevel,
-        totalClicks: taskProgress.clicks,
-        level: Math.floor(guineaTokens / 100) + 1,
-        miners,
-        taskProgress,
-        weeklyTasks,
-      }
-
-      const response = await fetch("/api/player/save", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify(gameData),
-      })
-
-      if (response.status === 503) {
-        console.warn("[v0] Database not configured - data not synced")
-        return
-      }
-
-      console.log("[v0] Data synced with server")
-    } catch (error) {
-      console.error("[v0] Error syncing data:", error)
-    }
-  }
-
-  const loadLeaderboard = async (period: "daily" | "weekly" | "alltime") => {
-    try {
-      const response = await fetch(`/api/leaderboard/${period}`)
-
-      if (response.status === 503) {
-        console.warn("[v0] Database not configured - leaderboard not available")
-        return
-      }
-
-      const data = await response.json()
-
-      if (data.success && data.data) {
-        console.log(`[v0] Loaded ${period} leaderboard:`, data.data.length, "players")
-        setLeaderboardData((prev) => ({
-          ...prev,
-          [period]: data.data,
-        }))
-      }
-    } catch (error) {
-      console.error("[v0] Error loading leaderboard:", error)
-    }
-  }
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadLeaderboard("daily")
-      loadLeaderboard("weekly")
-      loadLeaderboard("alltime")
-    }
-  }, [isAuthenticated])
-
-  const updateTaskProgress = (type: string, amount = 1) => {
-    setTaskProgress((prev) => {
-      const newProgress = { ...prev }
-      if (type in prev) {
-        newProgress[type as keyof TaskProgress] = (prev[type as keyof TaskProgress] || 0) + amount
-      }
-
-      setWeeklyTasks((tasks) =>
-        tasks.map((task) => {
-          if (task.type === type) {
-            const progressValue = type in newProgress ? newProgress[type as keyof TaskProgress] : 0
-            const newTaskProgress = Math.min(task.target, progressValue)
-            return {
-              ...task,
-              progress: newTaskProgress,
-              completed: newTaskProgress >= task.target,
-            }
-          }
-          if (task.type === "energy_level" && type === "energy_upgrades") {
-            return {
-              ...task,
-              progress: maxEnergyLevel,
-              completed: maxEnergyLevel >= task.target,
-            }
-          }
-          if (task.type === "carrots_level" && type === "carrots_upgrades") {
-            return {
-              ...task,
-              progress: carrotsPerClickLevel,
-              completed: carrotsPerClickLevel >= task.target,
-            }
-          }
-          return task
         }),
-      )
-
-      return newProgress
-    })
-  }
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setEnergy((prev) => Math.min(getCurrentMaxEnergy(), prev + 1))
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [maxEnergyLevel])
-
-  useEffect(() => {
-    const totalIncome = calculateTotalIncomePerHour()
-    if (totalIncome === 0) return
-    const now = Date.now()
-    const timePassed = now - lastMiningTime
-    const minutesPassed = Math.floor(timePassed / 60000)
-    if (minutesPassed > 0) {
-      const offlineIncome = (totalIncome / 60) * minutesPassed
-      setGuineaTokens((prev) => prev + offlineIncome)
-      updateTaskProgress("gt_earned", offlineIncome)
-      updateTaskProgress("mining_collected", minutesPassed)
-      setLastMiningTime(now)
-    }
-    const interval = setInterval(() => {
-      setMiningSecondsLeft((prev) => {
-        if (prev <= 1) {
-          const incomePerMinute = totalIncome / 60
-          setGuineaTokens((prevGT) => prevGT + incomePerMinute)
-          updateTaskProgress("gt_earned", incomePerMinute)
-          updateTaskProgress("mining_collected", 1)
-          setLastMiningTime(Date.now())
-          return 60
-        }
-        return prev - 1
       })
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [miners, lastMiningTime])
-
-  const generateReferralCode = (): string => {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    let result = "GP"
-    for (let i = 0; i < 8; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length))
+    } catch (error) {
+      console.error("[v0] Failed to save player data:", error)
+    } finally {
+      setIsSaving(false)
     }
-    return result
   }
 
-  const getCurrentCarrotsPerClick = (): number => carrotsPerClickLevel
-  const getCurrentMaxEnergy = (): number => maxEnergyLevel * 1000
+  const handleReferral = async (referrerId: number) => {
+    if (!tg.user || tg.user.id === referrerId) return
+    try {
+      await fetch("/api/referral/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: tg.user.id, referrerId }),
+      })
+    } catch (error) {
+      console.error("[v0] Failed to register referral:", error)
+    }
+  }
 
-  const calculateTotalIncomePerHour = (): number => {
-    return miners.reduce((total, miner) => {
+  const handleGuineaPigClick = () => {
+    const clickCost = 1
+    if (energy >= clickCost) {
+      const carrotsGained = getCurrentCarrotsPerClick()
+      setCarrots((prev) => prev + carrotsGained)
+      setEnergy((prev) => prev - clickCost)
+      setTotalClicks((prev) => prev + 1)
+
+      const xpGained = 1
+      checkLevelUp(xpGained)
+    }
+  }
+
+  const checkLevelUp = (xpGained: number) => {
+    let newXP = xp + xpGained
+    let newLevel = level
+    let xpNeeded = calculateXPNeeded(newLevel)
+
+    while (newXP >= xpNeeded) {
+      newXP -= xpNeeded
+      newLevel += 1
+      xpNeeded = calculateXPNeeded(newLevel)
+
+      const rewards = getLevelRewards(newLevel)
+      if (rewards.pig) {
+        unlockPig(rewards.pig)
+        alert(`${t("level.reward")} ${newLevel}: ${getPigById(rewards.pig)?.name[language] || rewards.pig}!`)
+      }
+    }
+
+    setXP(newXP)
+    setLevel(newLevel)
+  }
+
+  const unlockPig = (pigId: string) => {
+    if (!unlockedPigs.includes(pigId)) {
+      setUnlockedPigs((prev) => [...prev, pigId])
+    }
+  }
+
+  const initializeMiners = () => [
+    {
+      id: "farmer",
+      name: "Farmer",
+      icon: "👨‍🌾",
+      level: 0,
+      levels: [
+        { priceGT: 10, priceStars: 5, incomePerHour: 0.001 },
+        { priceGT: 50, priceStars: 25, incomePerHour: 0.005 },
+        { priceGT: 200, priceStars: 100, incomePerHour: 0.02 },
+        { priceGT: 800, priceStars: 400, incomePerHour: 0.08 },
+        { priceGT: 3000, priceStars: 1500, incomePerHour: 0.3 },
+      ],
+    },
+    {
+      id: "gardener",
+      name: "Gardener",
+      icon: "🌱",
+      level: 0,
+      levels: [
+        { priceGT: 25, priceStars: 12, incomePerHour: 0.002 },
+        { priceGT: 100, priceStars: 50, incomePerHour: 0.01 },
+        { priceGT: 400, priceStars: 200, incomePerHour: 0.04 },
+        { priceGT: 1600, priceStars: 800, incomePerHour: 0.16 },
+        { priceGT: 6000, priceStars: 3000, incomePerHour: 0.6 },
+      ],
+    },
+  ]
+
+  const calculateTotalIncome = () => {
+    let total = 0
+    miners.forEach((miner) => {
       if (miner.level > 0) {
-        const currentLevel = miner.levels[miner.level - 1]
-        return total + currentLevel.incomePerHour
+        total += miner.levels[miner.level - 1].incomePerHour
       }
-      return total
-    }, 0)
-  }
-
-  const handleTap = () => {
-    const energyCost = 1
-    const carrotsReward = getCurrentCarrotsPerClick()
-    if (energy >= energyCost) {
-      setCarrots((prev) => prev + carrotsReward)
-      setEnergy((prev) => Math.max(0, prev - energyCost))
-      updateTaskProgress("clicks", 1)
-      updateTaskProgress("carrots_earned", carrotsReward)
-    }
-  }
-
-  const getCarrotsUpgradeCost = (): number => {
-    if (carrotsPerClickLevel >= 7) {
-      return (carrotsPerClickLevel - 6) * 0.5
-    }
-    return carrotsPerClickLevel * 50000
-  }
-
-  const getEnergyUpgradeCost = (): number => {
-    if (maxEnergyLevel >= 7) {
-      return maxEnergyLevel * 1.0
-    }
-    return maxEnergyLevel * 100000
-  }
-
-  const upgradeCarrotsPerClick = () => {
-    const cost = getCarrotsUpgradeCost()
-    const isGTCost = carrotsPerClickLevel >= 7
-
-    if (carrotsPerClickLevel >= 10) {
-      alert("Достигнут максимальный уровень!")
-      return
-    }
-
-    if (isGTCost) {
-      if (guineaTokens < cost) {
-        alert(`Недостаточно GT! Нужно: ${cost.toFixed(2)} GT, у уас: ${guineaTokens.toFixed(2)} GT`)
-        return
-      }
-      setGuineaTokens((prev) => {
-        if (prev < cost) return prev
-        return prev - cost
-      })
-      setCarrotsPerClickLevel((prev) => prev + 1)
-      updateTaskProgress("carrots_upgrades", 1)
-      updateTaskProgress("gt_spent", cost)
-      updateTaskProgress("total_gt_spent_upgrades", cost)
-    } else {
-      if (carrots < cost) {
-        alert(`Недостаточно морковок! Нужно: ${cost.toLocaleString()} 🥕, у вас: ${carrots.toLocaleString()} 🥕`)
-        return
-      }
-      setCarrots((prev) => {
-        if (prev < cost) return prev
-        return prev - cost
-      })
-      setCarrotsPerClickLevel((prev) => prev + 1)
-      updateTaskProgress("carrots_upgrades", 1)
-    }
-  }
-
-  const upgradeMaxEnergy = () => {
-    const cost = getEnergyUpgradeCost()
-    const isGTCost = maxEnergyLevel >= 7
-
-    if (maxEnergyLevel >= 10) {
-      alert("Достигнут максимальный уровень!")
-      return
-    }
-
-    if (isGTCost) {
-      if (guineaTokens < cost) {
-        alert(`Недостаточно GT! Нужно: ${cost.toFixed(2)} GT, у вас: ${guineaTokens.toFixed(2)} GT`)
-        return
-      }
-      setGuineaTokens((prev) => {
-        if (prev < cost) return prev
-        return prev - cost
-      })
-      setMaxEnergyLevel((prev) => prev + 1)
-      setEnergy(getCurrentMaxEnergy() + 1000)
-      updateTaskProgress("energy_upgrades", 1)
-      updateTaskProgress("gt_spent", cost)
-      updateTaskProgress("total_gt_spent_upgrades", cost)
-    } else {
-      if (carrots < cost) {
-        alert(`Недостаточно морковок! Нужно: ${cost.toLocaleString()} 🥕, у вас: ${carrots.toLocaleString()} 🥕`)
-        return
-      }
-      setCarrots((prev) => {
-        if (prev < cost) return prev
-        return prev - cost
-      })
-      setMaxEnergyLevel((prev) => prev + 1)
-      setEnergy(getCurrentMaxEnergy() + 1000)
-      updateTaskProgress("energy_upgrades", 1)
-    }
-  }
-
-  const convertCarrots = () => {
-    const rate = 250000
-    if (carrots < rate) {
-      alert(`Недостаточно морковок! Нужно минимум: ${rate.toLocaleString()} 🥕, у вас: ${carrots.toLocaleString()} 🥕`)
-      return
-    }
-
-    const gtToAdd = Math.floor(carrots / rate)
-    const carrotsToSpend = gtToAdd * rate
-
-    setCarrots((prev) => {
-      if (prev < carrotsToSpend) return prev
-      return prev - carrotsToSpend
     })
-    setGuineaTokens((prev) => prev + gtToAdd)
-    setShowConvertModal(false)
-    updateTaskProgress("carrots_converted", carrotsToSpend)
-    updateTaskProgress("gt_earned", gtToAdd)
-    alert(`Успешно конвертировано! Получено: ${gtToAdd} GT`)
+    return total * (1 + referralBonus / 100)
   }
 
-  const upgradeMiner = (minerId: string, currency: "gt" | "stars") => {
+  const upgradeMiner = async (minerId: string, currency: "gt" | "stars") => {
     const miner = miners.find((m) => m.id === minerId)
-    if (!miner) return
-
-    if (miner.level >= 5) {
-      alert("Майнер уже на максимальном уровне!")
-      return
-    }
+    if (!miner || miner.level >= 5) return
 
     const nextLevel = miner.levels[miner.level]
+    const cost = currency === "gt" ? nextLevel.priceGT : nextLevel.priceStars
 
-    if (currency === "gt") {
-      if (guineaTokens < nextLevel.priceGT) {
-        alert(`Недостаточно GT! Нужно: ${nextLevel.priceGT} GT, у вас: ${guineaTokens.toFixed(2)} GT`)
-        return
-      }
-
-      setGuineaTokens((prev) => {
-        if (prev < nextLevel.priceGT) {
-          alert("Недостаточно GT!")
-          return prev
-        }
-        return prev - nextLevel.priceGT
-      })
-      updateTaskProgress("gt_spent", nextLevel.priceGT)
-    } else {
-      if (telegramStars < nextLevel.priceStars) {
-        alert(`Недостаточно звезд! Нужно: ${nextLevel.priceStars} ⭐, у вас: ${telegramStars} ⭐`)
-        return
-      }
-
-      setTelegramStars((prev) => {
-        if (prev < nextLevel.priceStars) {
-          alert("Недостаточно звезд!")
-          return prev
-        }
-        return prev - nextLevel.priceStars
-      })
-      updateTaskProgress("stars_spent", nextLevel.priceStars)
-    }
-
-    setMiners((prev) =>
-      prev.map((m) => {
-        if (m.id === minerId) {
-          return { ...m, level: m.level + 1 }
-        }
-        return m
-      }),
-    )
-    updateTaskProgress("miners_bought", 1)
-  }
-
-  const copyReferralLink = () => {
-    const referralLink = `https://t.me/GuineaPigClicker_bot?start=${referralCode}`
-    if (navigator.clipboard) {
-      navigator.clipboard
-        .writeText(referralLink)
-        .then(() => alert("Реферальная ссылка скопирована!"))
-        .catch(() => {
-          const textArea = document.createElement("textarea")
-          textArea.value = referralLink
-          document.body.appendChild(textArea)
-          textArea.select()
-          document.execCommand("copy")
-          document.body.removeChild(textArea)
-          alert("Реферальная ссылка скопирована!")
-        })
+    if (currency === "gt" && guineaTokens >= cost) {
+      setGuineaTokens((prev) => prev - cost)
+      setMiners((prev) => prev.map((m) => (m.id === minerId ? { ...m, level: m.level + 1 } : m)))
+    } else if (currency === "stars" && telegramStars >= cost) {
+      setTelegramStars((prev) => prev - cost)
+      setMiners((prev) => prev.map((m) => (m.id === minerId ? { ...m, level: m.level + 1 } : m)))
     }
   }
 
-  const shareReferralLink = () => {
-    const referralLink = `https://t.me/GuineaPigClicker_bot?start=${referralCode}`
-    const text = `🐹 Присоединяйся к Guinea Pig Tap! ${referralLink}`
-    if (navigator.share) {
-      navigator
-        .share({
-          title: "Guinea Pig Tap Game",
-          text: text,
-          url: referralLink,
-        })
-        .catch(() => copyReferralLink())
-    } else {
-      copyReferralLink()
-    }
-  }
-
-  const claimTaskReward = (taskId: string) => {
-    setWeeklyTasks((prev) =>
-      prev.map((task) => {
-        if (task.id === taskId && task.completed && !task.claimed) {
-          if (task.reward.carrots > 0) {
-            setCarrots((prevCarrots) => prevCarrots + task.reward.carrots)
-          }
-          if (task.reward.gt > 0) {
-            setGuineaTokens((prevGT) => prevGT + task.reward.gt)
-          }
-          return { ...task, claimed: true }
-        }
-        return task
-      }),
-    )
-  }
-
-  const supportDeveloper = (stars: number) => {
-    if (telegramStars < stars) {
-      alert(`Недостаточно звезд! Нужно: ${stars} ⭐, у вас: ${telegramStars} ⭐`)
-      return
-    }
-
-    setTelegramStars((prev) => {
-      if (prev < stars) return prev
-      return prev - stars
-    })
-    setShowSupportModal(false)
-    updateTaskProgress("stars_spent", stars)
-    alert("Спасибо за поддержку! ❤️")
-  }
-
-  const connectTonWallet = async () => {
-    if (!tonConnector) {
-      alert("TON Connect не готов. Пожалуйста, попробуйте позже.")
-      console.log("[v0] Connector not initialized")
-      return false
-    }
-
-    try {
-      console.log("[v0] Attempting to connect wallet...")
-      const walletList = await tonConnector.getWallets()
-      console.log("[v0] Available wallets:", walletList)
-
-      const wallet = await tonConnector.connect({
-        universalLink: tonConnector.getUniversalLink?.(),
-      })
-
-      if (wallet) {
-        console.log("[v0] Wallet connected:", wallet.account?.address)
-        setTonWallet(wallet)
-        setManualWalletAddress(wallet.account?.address || "")
-        return true
-      }
-      return false
-    } catch (error: any) {
-      console.error("[v0] Wallet connection error:", error)
-      alert(`Ошибка подключения: ${error.message}`)
-      return false
-    }
-  }
-
-  const sendTonPayment = async (gtAmount: number, tonAmount: number) => {
-    if (!tonConnector) {
-      alert("TON Connect не инициализирован")
-      return false
-    }
-
-    let wallet = tonWallet
-
-    // Если кошелек не подключен, подключаем его
-    if (!wallet) {
-      const connected = await connectTonWallet()
-      if (!connected) {
-        setShowManualWallet(true)
-        return false
-      }
-      wallet = tonWallet
-    }
-
-    if (!wallet?.account?.address) {
-      console.log("[v0] No wallet address found")
-      setShowManualWallet(true)
-      return false
-    }
-
-    try {
-      const recipientAddress = "UQATdZnXCLh_2eZgKGNDwlA-Y0lFMsqF3SgdPgfjKPOPstLn"
-      const amountInNanoTon = Math.floor(tonAmount * 1e9).toString()
-
-      console.log("[v0] Sending transaction:", {
-        from: wallet.account.address,
-        to: recipientAddress,
-        amount: tonAmount,
-        amountInNanoTon,
-        gtAmount,
-      })
-
-      const transaction = {
-        validUntil: Math.floor(Date.now() / 1000) + 600,
-        messages: [
-          {
-            address: recipientAddress,
-            amount: amountInNanoTon,
-          },
-        ],
-      }
-
-      const result = await tonConnector.sendTransaction(transaction)
-      console.log("[v0] Transaction successful:", result)
-
-      // Обновляем игровое состояние после успешной транзакции
-      setGuineaTokens((prev) => prev + gtAmount)
-      updateTaskProgress("gt_earned", gtAmount)
-      alert(`✅ Платеж отправлен! Получено ${gtAmount} GT.`)
-      setTonPaymentStatus("")
-      return true
-    } catch (error: any) {
-      console.error("[v0] Transaction error:", error)
-
-      if (error?.message?.includes("not connected")) {
-        setShowManualWallet(true)
-        alert("Кошелек отключился. Попробуйте еще раз.")
-      } else {
-        alert(`Ошибка транзакции: ${error.message}`)
-      }
-      return false
-    }
-  }
-
-  const buyGTWithTON = async (gtAmount: number, tonAmount: number) => {
-    console.log("[v0] Starting TON payment:", { gtAmount, tonAmount })
-    await sendTonPayment(gtAmount, tonAmount)
-  }
-
-  const disconnectTonWallet = () => {
-    if (tonConnector) {
-      tonConnector.disconnect()
-    }
-    setTonWallet(null)
-    setManualWalletAddress("")
-    console.log("[v0] Wallet disconnected")
-  }
-
-  const addManualWalletAddress = (address: string) => {
-    if (!address || !address.startsWith("UQ")) {
-      alert("Пожалуйста, введите корректный адрес TON кошелька (начинается с UQ).")
-      return
-    }
-    setManualWalletAddress(address)
-    setTonWallet({ account: { address: address } }) // Simulate wallet object for display
-    setShowManualWallet(false)
-    alert("Адрес кошелька добавлен. Для совершения транзакций вам понадобится подключить кошелек через TON Connect.")
-  }
-
-  // START OF UPDATES
-  // Removed handleBuyWithStars, using buyGTWithStars via API
   const buyGTWithStars = async (gtAmount: number) => {
-    if (isPurchasing) {
-      console.log("[v0] Purchase already in progress, ignoring click")
-      return
-    }
+    if (isPurchasing || !tg.user) return
+    setIsPurchasing(true)
 
     try {
-      setIsPurchasing(true)
-
-      const tgWebApp = window.Telegram?.WebApp
-      if (!tgWebApp || !tg.user) {
-        alert("❌ Telegram WebApp недоступен. Откройте игру через Telegram бота @GuineaPigClicker_bot")
-        return
-      }
-
-      console.log("[v0] Initiating Stars purchase via API:", { gtAmount, userId: tg.user.id })
-
-      const response = await fetch("/api/buy-stars", {
+      const res = await fetch("/api/buy-stars", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: tg.user.id,
           gtAmount,
+          currency: "XTR",
         }),
       })
 
-      const result = await response.json()
+      const data = await res.json()
+      if (data.success) {
+        alert(t("shop.check_bot_message"))
 
-      if (!response.ok) {
-        console.error("[v0] Failed to initiate purchase:", result)
-        alert(`❌ Ошибка: ${result.error}`)
-        return
-      }
+        let attempts = 0
+        const pollInterval = setInterval(async () => {
+          attempts++
+          const balanceRes = await fetch(`/api/get-balance/${tg.user.id}`)
+          const balanceData = await balanceRes.json()
 
-      console.log("[v0] Invoice sent successfully! Check your Telegram chat with bot.")
-      alert(`✅ Счет отправлен в чат с ботом! Пожалуйста, откройте чат и оплатите.`)
+          if (balanceData.guineaTokens > guineaTokens) {
+            setGuineaTokens(balanceData.guineaTokens)
+            setTelegramStars(balanceData.telegramStars)
+            clearInterval(pollInterval)
+            alert(`✅ ${t("shop.purchase_success")} ${gtAmount} GT!`)
+          }
 
-      // Starting periodic balance check after invoice is sent
-      const checkInterval = setInterval(async () => {
-        await syncBalanceFromServer()
-      }, 3000) // Check every 3 seconds
-
-      // Stopping check after 2 minutes
-      setTimeout(() => {
-        clearInterval(checkInterval)
-      }, 120000)
-
-      setShowSupportModal(false)
-    } catch (error: any) {
-      console.error("[v0] Stars purchase error:", error)
-      alert(`❌ Ошибка: ${error.message}`)
-    } finally {
-      setTimeout(() => {
-        setIsPurchasing(false)
-      }, 3000)
-    }
-  }
-
-  const syncBalanceFromServer = async () => {
-    if (!tg.user) return
-
-    try {
-      const response = await fetch(`/api/get-balance/${tg.user.id}`)
-      const data = await response.json()
-
-      if (response.ok && data.guineaTokens !== guineaTokens) {
-        setGuineaTokens(data.guineaTokens)
-        console.log("[v0] Balance synced from server:", data.guineaTokens, "GT")
+          if (attempts >= 40) clearInterval(pollInterval)
+        }, 3000)
       }
     } catch (error) {
-      console.error("[v0] Failed to sync balance:", error)
+      console.error("[v0] Purchase error:", error)
+      alert(t("shop.purchase_error"))
+    } finally {
+      setTimeout(() => setIsPurchasing(false), 3000)
     }
   }
 
-  useEffect(() => {
-    if (tg.isAvailable && tg.user) {
-      syncBalanceFromServer()
-      const interval = setInterval(syncBalanceFromServer, 30000) // Sync every 30 seconds
-      return () => clearInterval(interval)
+  const loadLeaderboard = async (period: "daily" | "weekly" | "alltime") => {
+    try {
+      const res = await fetch(`/api/leaderboard/${period}`)
+      const data = await res.json()
+      setLeaderboard(data.leaders || [])
+    } catch (error) {
+      console.error("[v0] Failed to load leaderboard:", error)
     }
-  }, [tg.isAvailable, tg.user])
-  // END OF UPDATES
+  }
 
-  const totalIncome = calculateTotalIncomePerHour()
+  const copyReferralLink = () => {
+    navigator.clipboard.writeText(referralLink)
+    alert(t("friends.link_copied"))
+  }
+
+  const shareReferralLink = () => {
+    if (tg.isAvailable) {
+      const text = encodeURIComponent(`Join Guinea Pig Clicker! ${referralLink}`)
+      window.open(`https://t.me/share/url?url=${referralLink}&text=${text}`, "_blank")
+    }
+  }
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-black via-green-900 to-orange-900">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
         <div className="text-center">
-          <div className="mb-4 text-2xl">🐹</div>
-          <div className="text-white">{t("game.loading") || "Loading..."}</div>
+          <div className="mb-4 text-6xl">🐹</div>
+          <div className="text-white text-lg">{t("game.loading")}</div>
         </div>
       </div>
     )
@@ -1596,87 +717,73 @@ function GameContent() {
 
   if (!tg.isAvailable) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-black via-green-900 to-orange-900 p-4">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4">
         <div className="max-w-md rounded-lg bg-black/50 p-8 text-center backdrop-blur-sm">
           <div className="mb-4 text-6xl">🐹</div>
           <h1 className="mb-4 text-2xl font-bold text-white">Guinea Pig Clicker</h1>
-          <p className="mb-6 text-gray-300">This game can only be played through Telegram</p>
+          <p className="mb-6 text-gray-300">{t("game.telegram_only")}</p>
           <a
             href="https://t.me/GuineaPigClicker_bot"
             className="inline-block rounded-lg bg-gradient-to-r from-green-600 to-orange-600 px-6 py-3 font-semibold text-white transition-all hover:from-green-700 hover:to-orange-700"
           >
-            Open in Telegram Bot
+            {t("game.open_in_telegram")}
           </a>
         </div>
       </div>
     )
   }
 
-  const handleGuineaPigClick = () => {
-    if (energy > 0 && playerData) {
-      // Ensure playerData is loaded
-      const clickPower = carrotsPerClickLevel
-      const newCarrots = carrots + clickPower
-      const newScore = score + clickPower
-      const newXP = xp + clickPower
-      const newEnergy = energy - 1
-
-      setCarrots(newCarrots)
-      setScore(newScore)
-      setXP(newXP)
-      setEnergy(newEnergy)
-
-      // Проверка повышения уровня
-      const xpForNextLevel = level * 1000
-      if (newXP >= xpForNextLevel) {
-        setLevel(level + 1)
-        setXP(newXP - xpForNextLevel)
-        console.log(`[v0] Level up! New level: ${level + 1}`)
-      }
-
-      setPlayerData({
-        ...playerData,
-        totalClicks: playerData.totalClicks + 1,
-      })
-    }
-  }
+  const activePig = getPigById(activePigId)
+  const totalIncome = calculateTotalIncome()
+  const xpNeeded = calculateXPNeeded(level)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white pb-24">
-      <div className="sticky top-0 z-10 bg-black/40 backdrop-blur-md border-b border-purple-500/30 p-3">
-        <div className="container mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 bg-black/30 rounded-full px-3 py-1.5">
-              <Coins className="w-4 h-4 text-yellow-400" />
-              <span className="font-bold text-yellow-400 text-sm">{guineaTokens.toFixed(2)}</span>
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white pb-20 safe-area-inset">
+      <div className="sticky top-0 z-10 bg-black/40 backdrop-blur-md border-b border-purple-500/30 p-2 sm:p-3">
+        <div className="container mx-auto flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+            <div className="flex items-center gap-1 bg-black/30 rounded-full px-2 py-1 text-xs sm:text-sm">
+              <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400" />
+              <span className="font-bold text-yellow-400">{guineaTokens.toFixed(2)}</span>
             </div>
-            <div className="flex items-center gap-1.5 bg-black/30 rounded-full px-3 py-1.5">
-              <span className="text-lg">⭐</span>
-              <span className="font-bold text-blue-400 text-sm">{telegramStars}</span>
+            <div className="flex items-center gap-1 bg-black/30 rounded-full px-2 py-1 text-xs sm:text-sm">
+              <span className="text-base sm:text-lg">⭐</span>
+              <span className="font-bold text-blue-400">{telegramStars}</span>
             </div>
-            {/* Display XP and Level */}
-            <div className="flex items-center gap-1.5 bg-black/30 rounded-full px-3 py-1.5">
-              <span className="text-lg">✨</span>
-              <span className="font-bold text-indigo-400 text-sm">{xp} XP</span>
+            <div className="flex items-center gap-1 bg-black/30 rounded-full px-2 py-1 text-xs sm:text-sm">
+              <span className="text-base sm:text-lg">✨</span>
+              <span className="font-bold text-indigo-400">
+                {xp}/{xpNeeded}
+              </span>
             </div>
-            <div className="flex items-center gap-1.5 bg-black/30 rounded-full px-3 py-1.5">
-              <span className="text-lg">🚀</span>
-              <span className="font-bold text-gray-300 text-sm">Lvl {level}</span>
+            <div className="flex items-center gap-1 bg-black/30 rounded-full px-2 py-1 text-xs sm:text-sm">
+              <span className="text-base sm:text-lg">🚀</span>
+              <span className="font-bold text-gray-300">Lvl {level}</span>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-1 sm:gap-2">
             <Button
               size="sm"
-              onClick={() => setShowSupportModal(true)}
-              className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-xs px-3"
+              onClick={() => setShowLanguageModal(true)}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-xs px-2 sm:px-3 h-8"
             >
-              <Heart className="w-3 h-3 mr-1" />
-              Помощь
+              <Globe className="w-3 h-3 sm:w-4 sm:h-4" />
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setShowPigsModal(true)}
+              className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-xs px-2 sm:px-3 h-8 flex items-center gap-1"
+            >
+              <img
+                src={activePig?.icon || "/placeholder.svg"}
+                alt="pig"
+                className="w-4 h-4 sm:w-5 sm:h-5 rounded-full"
+              />
             </Button>
             <Button
               size="sm"
               onClick={() => setShowConvertModal(true)}
-              className="bg-orange-600 hover:bg-orange-700 text-xs px-3"
+              className="bg-orange-600 hover:bg-orange-700 text-xs px-2 sm:px-3 h-8"
             >
               🥕→GT
             </Button>
@@ -1684,189 +791,88 @@ function GameContent() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-2xl">
         {activeTab === "main" && (
-          <div className="space-y-6">
-            <div className="text-center space-y-4">
-              <div className="text-2xl font-bold text-orange-400">{carrots.toLocaleString()} 🥕</div>
+          <div className="space-y-4 sm:space-y-6">
+            <div className="text-center space-y-3 sm:space-y-4">
+              <div className="text-xl sm:text-2xl font-bold text-orange-400">{carrots.toLocaleString()} 🥕</div>
               {totalIncome > 0 && (
-                <Card className="bg-gradient-to-r from-green-900/30 to-emerald-900/20 border-green-500/30 p-3">
-                  <div className="text-sm text-gray-300">Пассивный доход</div>
-                  <div className="text-lg font-bold text-green-400">+{totalIncome.toFixed(4)} GT/час</div>
-                  <div className="text-xs text-gray-400">+{(totalIncome / 60).toFixed(6)} GT/мин</div>
+                <Card className="bg-gradient-to-r from-green-900/30 to-emerald-900/20 border-green-500/30 p-2 sm:p-3">
+                  <div className="text-xs sm:text-sm text-gray-300">{t("game.passive_income")}</div>
+                  <div className="text-base sm:text-lg font-bold text-green-400">+{totalIncome.toFixed(4)} GT/ч</div>
+                  {referralBonus > 0 && (
+                    <div className="text-xs text-green-300">
+                      +{referralBonus}% {t("game.referral_bonus")}
+                    </div>
+                  )}
                 </Card>
               )}
+
               <div
-                className="w-64 h-64 mx-auto rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center cursor-pointer transform transition-transform active:scale-95 shadow-2xl"
-                onClick={handleGuineaPigClick} // Updated click handler
+                className="w-48 h-48 sm:w-64 sm:h-64 mx-auto rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center cursor-pointer transform transition-transform active:scale-95 shadow-2xl"
+                onClick={handleGuineaPigClick}
               >
                 <img
-                  src="/cute-guinea-pig-with-glasses-in-business-suit.jpg"
-                  alt="Guinea Pig"
-                  className="w-48 h-48 rounded-full object-cover"
+                  src={activePig?.icon || "/placeholder.svg"}
+                  alt={activePig?.name[language] || "Guinea Pig"}
+                  className="w-40 h-40 sm:w-56 sm:h-56 rounded-full object-cover"
                 />
               </div>
+
               <div className="flex items-center justify-between bg-black/30 rounded-full p-2">
-                <Zap className="w-5 h-5 text-yellow-400" />
-                <div className="flex-1 mx-3">
+                <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
+                <div className="flex-1 mx-2 sm:mx-3">
                   <Progress value={(energy / getCurrentMaxEnergy()) * 100} className="h-2" />
                 </div>
-                <span className="text-sm font-medium">
+                <span className="text-xs sm:text-sm font-medium">
                   {energy}/{getCurrentMaxEnergy()}
                 </span>
               </div>
-              <p className="text-sm text-gray-400">
-                {t("game.click_power") || "Tap"} = {getCurrentCarrotsPerClick()} 🥕
+              <p className="text-xs sm:text-sm text-gray-400">
+                {t("game.tap_power")} = {getCurrentCarrotsPerClick()} 🥕
               </p>
             </div>
           </div>
         )}
 
-        {activeTab === "upgrade" && (
-          <div className="space-y-6">
-            <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold text-white">{t("game.upgrades") || "Прокачка"}</h2>
-            </div>
-            <div className="space-y-4">
-              <Card className="bg-gradient-to-br from-orange-900/30 to-red-900/20 border-orange-500/30 p-4">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold text-white">{t("game.carrots_per_click") || "Морковки за клик"}</h3>
-                      <div className="text-sm text-gray-400">
-                        {t("game.level", { level: carrotsPerClickLevel })}/{t("game.max_level", { level: 10 })}
-                      </div>
-                    </div>
-                    <div className="text-lg font-bold text-orange-400">{getCurrentCarrotsPerClick()} 🥕</div>
-                  </div>
-                  <Progress value={(carrotsPerClickLevel / 10) * 100} className="h-2" />
-                  {carrotsPerClickLevel < 10 ? (
-                    <Button
-                      onClick={upgradeCarrotsPerClick}
-                      disabled={
-                        carrotsPerClickLevel >= 7
-                          ? guineaTokens < getCarrotsUpgradeCost()
-                          : carrots < getCarrotsUpgradeCost()
-                      }
-                      className="w-full bg-orange-600 hover:bg-orange-700"
-                    >
-                      {t("game.upgrade_for", {
-                        cost: getCarrotsUpgradeCost().toLocaleString(),
-                        currency: carrotsPerClickLevel >= 7 ? "GT" : "🥕",
-                      })}
-                    </Button>
-                  ) : (
-                    <Badge className="w-full justify-center bg-gradient-to-r from-orange-500 to-red-500">МАКС</Badge>
-                  )}
-                </div>
-              </Card>
-              <Card className="bg-gradient-to-br from-yellow-900/30 to-orange-900/20 border-yellow-500/30 p-4">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold text-white">{t("game.max_energy") || "Максимальная энергия"}</h3>
-                      <div className="text-sm text-gray-400">
-                        {t("game.level", { level: maxEnergyLevel })}/{t("game.max_level", { level: 10 })}
-                      </div>
-                    </div>
-                    <div className="text-lg font-bold text-yellow-400">{getCurrentMaxEnergy()}</div>
-                  </div>
-                  <Progress value={(maxEnergyLevel / 10) * 100} className="h-2" />
-                  {maxEnergyLevel < 10 ? (
-                    <Button
-                      onClick={upgradeMaxEnergy}
-                      disabled={
-                        maxEnergyLevel >= 7 ? guineaTokens < getEnergyUpgradeCost() : carrots < getEnergyUpgradeCost()
-                      }
-                      className="w-full bg-yellow-600 hover:bg-yellow-700"
-                    >
-                      {t("game.upgrade_for", {
-                        cost: getEnergyUpgradeCost().toLocaleString(),
-                        currency: maxEnergyLevel >= 7 ? "GT" : "🥕",
-                      })}
-                    </Button>
-                  ) : (
-                    <Badge className="w-full justify-center bg-gradient-to-r from-yellow-500 to-orange-500">МАКС</Badge>
-                  )}
-                </div>
-              </Card>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "mine" && (
-          <div className="space-y-6">
-            <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold text-white">{t("game.miners") || "Майнеры"}</h2>
-              <p className="text-sm text-gray-400">
-                {t("game.buy_miners") || "Покупайте майнеров для пассивного дохода GT"}
-              </p>
-            </div>
-            {totalIncome > 0 ? (
-              <Card className="bg-gradient-to-br from-green-900/30 to-emerald-900/20 border-green-500/30 p-4">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm text-gray-300">{t("game.passive_income") || "Пассивный доход"}</div>
-                      <div className="text-2xl font-bold text-green-400">+{totalIncome.toFixed(4)} GT/час</div>
-                      <div className="text-xs text-gray-400">+{(totalIncome / 60).toFixed(6)} GT/мин</div>
-                    </div>
-                    <Pickaxe className="w-12 h-12 text-green-400 animate-pulse" />
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-300">
-                    <span>{t("game.time_to_next_payout") || "До следующего начисления"}</span>
-                    <span className="font-mono text-green-400">{miningSecondsLeft}с</span>
-                  </div>
-                  <Progress value={((60 - miningSecondsLeft) / 60) * 100} className="h-3" />
-                </div>
-              </Card>
-            ) : (
-              <Card className="bg-gradient-to-br from-orange-900/30 to-red-900/20 border-orange-500/30 p-4">
-                <div className="text-center space-y-2">
-                  <Pickaxe className="w-12 h-12 text-orange-400 mx-auto" />
-                  <div className="text-lg font-semibold text-white">{t("game.no_miners") || "Майнеры не активны"}</div>
-                  <div className="text-sm text-gray-400">
-                    {t("game.buy_first_miner") ||
-                      "Купите первого майнера ниже чтобы начать зарабатывать GT автоматически!"}
-                  </div>
-                </div>
-              </Card>
-            )}
-            <div className="grid grid-cols-1 gap-4">
+        {activeTab === "miners" && (
+          <div className="space-y-4">
+            <h2 className="text-xl sm:text-2xl font-bold text-white text-center">{t("tab.miners")}</h2>
+            <div className="grid grid-cols-1 gap-3 sm:gap-4">
               {miners.map((miner) => {
                 const currentLevel = miner.level > 0 ? miner.levels[miner.level - 1] : null
                 const nextLevel = miner.level < 5 ? miner.levels[miner.level] : null
                 return (
                   <Card
                     key={miner.id}
-                    className="bg-gradient-to-br from-purple-900/30 to-blue-900/20 border-purple-500/30 p-4"
+                    className="bg-gradient-to-br from-purple-900/30 to-blue-900/20 border-purple-500/30 p-3 sm:p-4"
                   >
-                    <div className="space-y-3">
+                    <div className="space-y-2 sm:space-y-3">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="text-3xl">{miner.icon}</div>
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <div className="text-2xl sm:text-3xl">{miner.icon}</div>
                           <div>
-                            <h3 className="font-semibold text-white">{miner.name}</h3>
+                            <h3 className="font-semibold text-white text-sm sm:text-base">{miner.name}</h3>
                             <Badge variant="outline" className="text-xs">
-                              {t("game.level", { level: miner.level })}
+                              Lvl {miner.level}
                             </Badge>
                           </div>
                         </div>
                         {currentLevel && (
                           <div className="text-right">
-                            <div className="text-sm font-semibold text-green-400">
+                            <div className="text-xs sm:text-sm font-semibold text-green-400">
                               +{currentLevel.incomePerHour.toFixed(4)} GT/ч
                             </div>
                           </div>
                         )}
                       </div>
                       {nextLevel && (
-                        <div className="flex gap-2">
+                        <div className="grid grid-cols-2 gap-2">
                           <Button
                             size="sm"
                             onClick={() => upgradeMiner(miner.id, "gt")}
                             disabled={guineaTokens < nextLevel.priceGT}
-                            className="flex-1 bg-yellow-600 hover:bg-yellow-700"
+                            className="bg-yellow-600 hover:bg-yellow-700 text-xs sm:text-sm h-9 sm:h-10"
                           >
                             {nextLevel.priceGT} GT
                           </Button>
@@ -1874,15 +880,15 @@ function GameContent() {
                             size="sm"
                             onClick={() => upgradeMiner(miner.id, "stars")}
                             disabled={telegramStars < nextLevel.priceStars}
-                            className="flex-1 bg-blue-600 hover:bg-blue-700"
+                            className="bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm h-9 sm:h-10"
                           >
                             {nextLevel.priceStars} ⭐
                           </Button>
                         </div>
                       )}
                       {miner.level >= 5 && (
-                        <Badge className="w-full justify-center bg-gradient-to-r from-yellow-500 to-orange-500">
-                          МАКС
+                        <Badge className="w-full justify-center bg-gradient-to-r from-yellow-500 to-orange-500 text-xs sm:text-sm">
+                          MAX
                         </Badge>
                       )}
                     </div>
@@ -1893,246 +899,101 @@ function GameContent() {
           </div>
         )}
 
-        {activeTab === "tasks" && (
-          <div className="space-y-6">
-            <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold text-white">{t("game.weekly_tasks") || "Еженедельные задания"}</h2>
-              <p className="text-xs text-gray-400">{t("game.tasks_reset") || "Обновляются каждую неделю"}</p>
-            </div>
-            <div className="space-y-4">
-              {weeklyTasks.map((task) => (
-                <Card
-                  key={task.id}
-                  className="bg-gradient-to-br from-purple-900/30 to-blue-900/20 border-purple-500/30 p-4"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-semibold text-white">{task.title}</h3>
-                        <p className="text-sm text-gray-400">{task.description}</p>
-                      </div>
-                      {task.completed && <CheckCircle className="w-6 h-6 text-green-400" />}
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">{t("game.progress") || "Прогресс"}</span>
-                        <span className="text-white">
-                          {task.progress}/{task.target}
-                        </span>
-                      </div>
-                      <Progress value={(task.progress / task.target) * 100} className="h-2" />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4 text-sm">
-                        {task.reward.carrots > 0 && (
-                          <span className="text-orange-400">+{task.reward.carrots.toLocaleString()} 🥕</span>
-                        )}
-                        {task.reward.gt > 0 && <span className="text-yellow-400">+{task.reward.gt} GT</span>}
-                      </div>
-                      <Button
-                        size="sm"
-                        disabled={!task.completed || task.claimed}
-                        onClick={() => claimTaskReward(task.id)}
-                        className="bg-purple-600 hover:bg-purple-700"
-                      >
-                        {task.claimed ? t("game.claimed") : task.completed ? t("game.claim") : t("game.in_progress")}
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
         {activeTab === "friends" && (
-          <div className="space-y-6">
-            <div className="text-center space-y-4">
-              <h2 className="text-2xl font-bold text-white">{t("game.invite_friends") || "Пригласить друзей"}</h2>
-              <p className="text-gray-400">{t("game.referral_bonus") || "Получай 10% от заработка друзей!"}</p>
+          <div className="space-y-4 sm:space-y-6">
+            <div className="text-center space-y-2">
+              <h2 className="text-xl sm:text-2xl font-bold text-white">{t("friends.title")}</h2>
+              <p className="text-xs sm:text-sm text-gray-400">{t("friends.description")}</p>
             </div>
-            <Card className="bg-gradient-to-br from-purple-900/50 to-blue-900/30 border-purple-500/30 p-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white">
-                  {t("game.your_referral_link") || "Твоя реферальная ссылка"}
-                </h3>
-                <div className="bg-black/30 rounded-lg p-3 border border-purple-500/20">
-                  <div className="text-xs text-gray-400 mb-1">{t("game.code") || "Код"}</div>
-                  <div className="text-lg font-mono text-purple-300">{referralCode}</div>
-                </div>
+
+            <Card className="bg-gradient-to-br from-purple-900/30 to-blue-900/20 border-purple-500/30 p-3 sm:p-4">
+              <div className="space-y-3">
+                <div className="text-xs sm:text-sm text-gray-300">{t("friends.link")}</div>
                 <div className="flex gap-2">
-                  <Button onClick={copyReferralLink} className="flex-1 bg-purple-600 hover:bg-purple-700">
-                    <Copy className="w-4 h-4 mr-2" />
-                    {t("game.copy") || "Копировать"}
+                  <input
+                    type="text"
+                    value={referralLink}
+                    readOnly
+                    className="flex-1 bg-black/30 text-white px-3 py-2 rounded text-xs sm:text-sm"
+                  />
+                  <Button onClick={copyReferralLink} size="sm" className="bg-green-600 hover:bg-green-700">
+                    <Copy className="w-4 h-4" />
                   </Button>
-                  <Button onClick={shareReferralLink} variant="outline" className="border-purple-500/50 bg-transparent">
+                  <Button onClick={shareReferralLink} size="sm" className="bg-blue-600 hover:bg-blue-700">
                     <Share2 className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
             </Card>
-            <div className="grid grid-cols-2 gap-4">
-              <Card className="bg-gradient-to-br from-green-900/30 to-emerald-900/20 border-green-500/30 p-4 text-center">
-                <UserPlus className="w-8 h-8 text-green-400 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-white">{friends.length}</div>
-                <div className="text-sm text-gray-400">{t("game.friends") || "Друзей"}</div>
+
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              <Card className="bg-gradient-to-br from-green-900/30 to-emerald-900/20 border-green-500/30 p-3 sm:p-4 text-center">
+                <UserPlus className="w-6 h-6 sm:w-8 sm:h-8 text-green-400 mx-auto mb-2" />
+                <div className="text-xl sm:text-2xl font-bold text-white">{referralsCount}</div>
+                <div className="text-xs sm:text-sm text-gray-400">{t("friends.count")}</div>
               </Card>
-              <Card className="bg-gradient-to-br from-yellow-900/30 to-orange-900/20 border-yellow-500/30 p-4 text-center">
-                <Coins className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-white">0</div>
-                <div className="text-sm text-gray-400">{t("game.bonus") || "Бонус"}</div>
+              <Card className="bg-gradient-to-br from-yellow-900/30 to-orange-900/20 border-yellow-500/30 p-3 sm:p-4 text-center">
+                <Coins className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-400 mx-auto mb-2" />
+                <div className="text-xl sm:text-2xl font-bold text-white">+{referralBonus}%</div>
+                <div className="text-xs sm:text-sm text-gray-400">{t("friends.bonus")}</div>
               </Card>
             </div>
           </div>
         )}
 
         {activeTab === "shop" && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold text-white">{t("game.shop") || "Магазин"}</h2>
-              <p className="text-sm text-gray-400">
-                {t("game.buy_gt_with_stars_or_ton") || "Покупайте GT за Telegram Stars или TON"}
-              </p>
+              <h2 className="text-xl sm:text-2xl font-bold text-white">{t("tab.shop")}</h2>
+              <p className="text-xs sm:text-sm text-gray-400">{t("shop.buy_gt_description")}</p>
             </div>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white">
-                {t("game.buy_with_stars") || "Покупка за Telegram Stars"}
-              </h3>
-              <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-3 sm:space-y-4">
+              <h3 className="text-base sm:text-lg font-semibold text-white">{t("shop.buy_for_stars")}</h3>
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 {[
-                  { gt: 10, stars: 20 },
-                  { gt: 25, stars: 50 },
-                  { gt: 50, stars: 100 },
-                  { gt: 100, stars: 200 },
-                  { gt: 250, stars: 500 },
-                  { gt: 500, stars: 1000 },
+                  { gt: 100, stars: 50 },
+                  { gt: 500, stars: 250 },
+                  { gt: 1000, stars: 500 },
+                  { gt: 3000, stars: 1400 },
+                  { gt: 5000, stars: 2300 },
+                  { gt: 7000, stars: 3200 },
                 ].map((pack) => (
-                  <Card
+                  <Button
                     key={pack.gt}
-                    className="bg-gradient-to-br from-blue-900/30 to-purple-900/20 border-blue-500/30 p-4"
+                    onClick={() => buyGTWithStars(pack.gt)}
+                    disabled={isPurchasing}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 h-auto py-2 sm:py-3 flex flex-col gap-0.5 sm:gap-1 text-xs sm:text-base"
                   >
-                    <div className="text-center space-y-2">
-                      <div className="text-3xl font-bold text-yellow-400">{pack.gt} GT</div>
-                      <div className="text-sm text-gray-400">{pack.stars} ⭐</div>
-                      <Button
-                        onClick={() => buyGTWithStars(pack.gt)}
-                        disabled={isPurchasing}
-                        className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isPurchasing ? "Отправка..." : `${pack.gt} GT`}
-                        {!isPurchasing && (
-                          <>
-                            <br />
-                            <span className="text-xs">{pack.gt * 2} ⭐</span>
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </Card>
+                    <div className="font-bold">{pack.gt} GT</div>
+                    <div className="text-[10px] sm:text-xs opacity-80">{pack.stars} ⭐</div>
+                  </Button>
                 ))}
-              </div>
-
-              <div className="mt-8">
-                <h3 className="text-lg font-semibold text-white mb-4">{t("game.buy_with_ton") || "Покупка за TON"}</h3>
-
-                {tonWallet && (
-                  <Card className="bg-gradient-to-br from-blue-900/30 to-cyan-900/20 border-blue-500/30 p-4 mb-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-sm text-gray-400">{t("game.connected_wallet") || "Подключен кошелек"}</div>
-                        <div className="text-xs font-mono text-blue-300">
-                          {manualWalletAddress?.slice(0, 8)}...{manualWalletAddress?.slice(-6)}
-                        </div>
-                      </div>
-                      <Button size="sm" onClick={disconnectTonWallet} variant="outline">
-                        {t("game.disconnect") || "Отключить"}
-                      </Button>
-                    </div>
-                  </Card>
-                )}
-
-                {tonPaymentStatus && (
-                  <Card className="bg-gradient-to-br from-yellow-900/30 to-orange-900/20 border-yellow-500/30 p-4 mb-4">
-                    <div className="text-center text-yellow-300">{tonPaymentStatus}</div>
-                  </Card>
-                )}
-
-                <Card className="bg-gradient-to-br from-cyan-900/30 to-blue-900/20 border-cyan-500/30 p-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <Wallet className="w-8 h-8 text-cyan-400" />
-                      <div>
-                        <h4 className="font-semibold text-white">{t("game.ton_payment") || "Оплата TON"}</h4>
-                        <p className="text-sm text-gray-400">
-                          {t("game.connect_wallet_buy_gt") || "Подключите TON кошелек и купите GT"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="text-sm text-gray-300">
-                        {t("game.exchange_rate", { ton: 1, gt: 100 }) || "Курс: 1 TON = 100 GT"}
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        {t("game.supported_wallets") || "Поддерживаются: Tonkeeper, Wallet, Telegram Wallet и другие"}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { gt: 10, ton: 0.1 },
-                        { gt: 25, ton: 0.25 },
-                        { gt: 50, ton: 0.5 },
-                        { gt: 100, ton: 1.0 },
-                        { gt: 250, ton: 2.5 },
-                        { gt: 500, ton: 5.0 },
-                      ].map((pack) => (
-                        <Button
-                          key={pack.gt}
-                          onClick={() => buyGTWithTON(pack.gt, pack.ton)}
-                          className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 h-auto py-3 flex flex-col gap-1"
-                        >
-                          <div className="text-lg font-bold">{pack.gt} GT</div>
-                          <div className="text-xs opacity-80">{pack.ton} TON</div>
-                        </Button>
-                      ))}
-                    </div>
-
-                    {!tonWallet && !manualWalletAddress && (
-                      <div className="text-center text-sm text-gray-400 mt-2">
-                        {t("game.click_button_to_connect") || "Нажмите на любую кнопку выше чтобы подключить кошелек"}
-                      </div>
-                    )}
-                  </div>
-                </Card>
               </div>
             </div>
           </div>
         )}
 
         {activeTab === "leaderboard" && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold text-white flex items-center justify-center gap-2">
-                <Crown className="w-6 h-6 text-yellow-400" />
-                {t("game.leaderboard") || "Таблица лидеров"}
+              <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center justify-center gap-2">
+                <Crown className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" />
+                {t("leaderboard.title")}
               </h2>
-              <p className="text-sm text-gray-400">{t("game.top_players", { count: 100 }) || "Топ 100 игроков"}</p>
             </div>
 
-            <div className="flex gap-2 justify-center">
+            <div className="flex gap-2 justify-center flex-wrap">
               <Button
                 size="sm"
                 onClick={() => {
                   setLeaderboardPeriod("daily")
                   loadLeaderboard("daily")
                 }}
-                className={
-                  leaderboardPeriod === "daily" ? "bg-purple-600 hover:bg-purple-700" : "bg-gray-700 hover:bg-gray-600"
-                }
+                variant={leaderboardPeriod === "daily" ? "default" : "outline"}
+                className="text-xs sm:text-sm"
               >
-                {t("game.daily") || "День"}
+                {t("leaderboard.daily")}
               </Button>
               <Button
                 size="sm"
@@ -2140,11 +1001,10 @@ function GameContent() {
                   setLeaderboardPeriod("weekly")
                   loadLeaderboard("weekly")
                 }}
-                className={
-                  leaderboardPeriod === "weekly" ? "bg-purple-600 hover:bg-purple-700" : "bg-gray-700 hover:bg-gray-600"
-                }
+                variant={leaderboardPeriod === "weekly" ? "default" : "outline"}
+                className="text-xs sm:text-sm"
               >
-                {t("game.weekly") || "Неделя"}
+                {t("leaderboard.weekly")}
               </Button>
               <Button
                 size="sm"
@@ -2152,342 +1012,195 @@ function GameContent() {
                   setLeaderboardPeriod("alltime")
                   loadLeaderboard("alltime")
                 }}
-                className={
-                  leaderboardPeriod === "alltime"
-                    ? "bg-purple-600 hover:bg-purple-700"
-                    : "bg-gray-700 hover:bg-gray-600"
-                }
+                variant={leaderboardPeriod === "alltime" ? "default" : "outline"}
+                className="text-xs sm:text-sm"
               >
-                {t("game.all_time") || "Все время"}
+                {t("leaderboard.alltime")}
               </Button>
             </div>
 
-            <div className="space-y-2">
-              {leaderboardData[leaderboardPeriod].slice(0, 10).map((player) => (
+            <div className="space-y-2 sm:space-y-3">
+              {leaderboard.map((player, index) => (
                 <Card
-                  key={player.rank}
-                  className={
-                    player.rank === 1
-                      ? "bg-gradient-to-r from-yellow-900/50 to-orange-900/30 border-yellow-500/50"
-                      : player.rank === 2
-                        ? "bg-gradient-to-r from-gray-700/50 to-gray-600/30 border-gray-400/50"
-                        : player.rank === 3
-                          ? "bg-gradient-to-r from-orange-900/50 to-red-900/30 border-orange-700/50"
-                          : "bg-gradient-to-br from-purple-900/30 to-blue-900/20 border-purple-500/30"
-                  }
+                  key={player.userId}
+                  className="bg-gradient-to-br from-purple-900/30 to-blue-900/20 border-purple-500/30 p-2 sm:p-3"
                 >
-                  <div className="flex items-center justify-between p-4">
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={`text-2xl font-bold ${
-                          player.rank === 1
-                            ? "text-yellow-400"
-                            : player.rank === 2
-                              ? "text-gray-300"
-                              : player.rank === 3
-                                ? "text-orange-400"
-                                : "text-gray-400"
-                        }`}
-                      >
-                        #{player.rank}
-                      </div>
-                      <div className="text-2xl">{player.avatar}</div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="text-lg sm:text-xl font-bold text-yellow-400">#{index + 1}</div>
                       <div>
-                        <div className="font-semibold text-white">{player.username}</div>
-                        <div className="text-sm text-gray-400">{player.score.toLocaleString()} GT</div>
+                        <div className="font-semibold text-white text-sm sm:text-base">
+                          {player.username || `Player ${player.userId}`}
+                        </div>
+                        <div className="text-xs text-gray-400">Lvl {player.level}</div>
                       </div>
                     </div>
-                    {player.rank <= 3 && <Crown className="w-6 h-6 text-yellow-400" />}
+                    <div className="text-right">
+                      <div className="font-bold text-green-400 text-sm sm:text-base">
+                        {player.score.toLocaleString()}
+                      </div>
+                      <div className="text-[10px] sm:text-xs text-gray-400">carrots</div>
+                    </div>
                   </div>
                 </Card>
               ))}
             </div>
-
-            <div className="text-center">
-              <Button variant="outline" className="border-purple-500/50 bg-transparent">
-                {t("game.show_more") || "Показать больше"}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "about" && (
-          <div className="space-y-6">
-            <div className="text-center space-y-4">
-              <div className="text-6xl">🐹</div>
-              <h2 className="text-2xl font-bold text-white">{t("game.title") || "Guinea Pig Tap Game"}</h2>
-              <p className="text-gray-400">{t("game.tagline") || "Тапай, зарабатывай, развивайся!"}</p>
-            </div>
-            <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-white">{t("game.follow_us") || "Следите за нами"}</h3>
-              <a
-                href="https://youtube.com/@guaniapigclicker?si=NOxj5_e-yIgerx7C"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Card className="bg-gradient-to-br from-red-900/30 to-pink-900/20 border-red-500/30 p-4 hover:border-red-500/50 transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-red-600 to-pink-600 flex items-center justify-center">
-                      <Youtube className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-white">YouTube</h4>
-                      <p className="text-sm text-gray-400">{t("game.watch_videos") || "Смотрите наши видео"}</p>
-                    </div>
-                  </div>
-                </Card>
-              </a>
-              <a href="https://tiktok.com/@guania.pig.clicke" target="_blank" rel="noopener noreferrer">
-                <Card className="bg-gradient-to-br from-cyan-900/30 to-blue-900/20 border-cyan-500/30 p-4 hover:border-cyan-500/50 transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-600 to-blue-600 flex items-center justify-center">
-                      <Music className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-white">TikTok</h4>
-                      <p className="text-sm text-gray-400">{t("game.follow_us") || "Подписывайтесь"}</p>
-                    </div>
-                  </div>
-                </Card>
-              </a>
-            </div>
-            <Card className="bg-gradient-to-br from-pink-900/30 to-purple-900/20 border-pink-500/30 p-6 space-y-4">
-              <div className="flex items-center gap-2">
-                <Heart className="w-6 h-6 text-pink-400" />
-                <h3 className="text-lg font-semibold text-white">
-                  {t("game.support_developer") || "Поддержать автора"}
-                </h3>
-              </div>
-              <p className="text-gray-300 text-sm">{t("game.help_project") || "Помогите в развитии проекта!"}</p>
-              <Button
-                onClick={() => setShowSupportModal(true)}
-                className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700"
-              >
-                <Heart className="w-4 h-4 mr-2" />
-                {t("game.support_for_stars") || "Поддержать за Stars"}
-              </Button>
-            </Card>
           </div>
         )}
       </div>
-
-      <Dialog open={showConvertModal} onOpenChange={setShowConvertModal}>
-        <DialogContent className="bg-gradient-to-br from-purple-900 to-blue-900 border-purple-500/50">
-          <DialogHeader>
-            <DialogTitle className="text-white">
-              {t("game.convert_carrots_to_gt") || "Конвертировать Carrots в GT"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="text-center space-y-2">
-              <p className="text-gray-300">
-                {t("game.exchange_rate", { carrots: 250000, gt: 1 }) || "Курс: 250,000 🥕 = 1 GT"}
-              </p>
-              <p className="text-sm text-gray-400">
-                {t("game.your_carrots", { carrots: carrots.toLocaleString() }) ||
-                  `У вас: ${carrots.toLocaleString()} 🥕`}
-              </p>
-              <p className="text-sm text-gray-400">
-                {t("game.you_will_get", { gt: Math.floor(carrots / 250000) }) ||
-                  `Получите: ${Math.floor(carrots / 250000)} GT`}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                onClick={convertCarrots}
-                disabled={carrots < 250000}
-                className="flex-1 bg-orange-600 hover:bg-orange-700"
-              >
-                {t("game.convert") || "Конвертировать"}
-              </Button>
-              <Button variant="outline" onClick={() => setShowConvertModal(false)}>
-                {t("game.cancel") || "Отмена"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Support Modal */}
-      <Dialog open={showSupportModal} onOpenChange={setShowSupportModal}>
-        <DialogContent className="bg-gradient-to-br from-purple-900 to-blue-900 border-purple-500/50">
-          <DialogHeader>
-            <DialogTitle className="text-white flex items-center gap-2">
-              <Heart className="w-5 h-5 text-pink-400" />
-              {t("game.support_developer") || "Поддержать разработчика"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="text-center">
-              <label htmlFor="manualWalletAddress" className="block text-sm font-medium text-gray-300 mb-2">
-                {t("game.select_amount") || "Выберите сумму"}
-              </label>
-              <div className="text-sm text-gray-400">{t("game.your_stars", { stars: telegramStars })}</div>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              {[1, 5, 10, 20, 50, 100].map((amount) => (
-                <Button
-                  key={amount}
-                  onClick={() => buyGTWithStars(amount)}
-                  disabled={telegramStars < amount || isPurchasing}
-                  className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 h-12 text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isPurchasing ? "..." : `${amount} ⭐`}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Manual Wallet Address Input Modal */}
-      <Dialog open={showManualWallet} onOpenChange={setShowManualWallet}>
-        <DialogContent className="bg-gradient-to-br from-purple-900 to-blue-900 border-purple-500/50">
-          <DialogHeader>
-            <DialogTitle className="text-white flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-cyan-400" />
-              {t("game.enter_ton_wallet_address") || "Введите адрес TON кошелька"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="text-center">
-              <label htmlFor="manualWalletAddress" className="block text-sm font-medium text-gray-300 mb-2">
-                {t("game.wallet_address") || "Адрес кошелька"}
-              </label>
-              <input
-                id="manualWalletAddress"
-                type="text"
-                value={manualWalletAddress}
-                onChange={(e) => setManualWalletAddress(e.target.value)}
-                className="w-full p-3 border border-purple-700 rounded-lg bg-black/30 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                placeholder="EQ..."
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                onClick={() => addManualWalletAddress(manualWalletAddress)}
-                className="flex-1 bg-cyan-600 hover:bg-cyan-700"
-              >
-                {t("game.add_address") || "Добавить адрес"}
-              </Button>
-              <Button variant="outline" onClick={() => setShowManualWallet(false)}>
-                {t("game.cancel") || "Отмена"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showCryptoPaymentModal} onOpenChange={setShowCryptoPaymentModal}>
-        <DialogContent className="bg-gradient-to-br from-purple-900 to-blue-900 border-purple-500/50">
-          <DialogHeader>
-            <DialogTitle className="text-white">
-              {t("game.ton_payment_instructions") || "Инструкция по оплате TON"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-3 text-sm text-gray-300">
-              <div>
-                <strong className="text-white">{t("game.step_1") || "Шаг 1:"}</strong>{" "}
-                {t("game.send_ton_to_address") || "Отправьте TON на адрес:"}
-              </div>
-              <div className="bg-black/30 rounded-lg p-3 border border-green-500/20">
-                <div className="font-mono text-green-300 break-all text-xs">
-                  UQATdZnXCLh_2eZgKGNDwlA-Y0lFMsqF3SgdPgfjKPOPstLn
-                </div>
-              </div>
-              <div>
-                <strong className="text-white">{t("game.step_2") || "Шаг 2:"}</strong>{" "}
-                {t("game.click_ok_after_sending") || "После отправки, нажмите "}
-                <span className="text-yellow-400">"OK"</span> {t("game.in_payment_window") || "в окне оплаты."}
-              </div>
-              <div>
-                <strong className="text-white">{t("game.step_3") || "Шаг 3:"}</strong>{" "}
-                {t("game.gt_will_be_credited") || "GT будут зачислены автоматически."}
-              </div>
-              <div className="text-yellow-400">
-                <strong>{t("game.exchange_rate_colon") || "Курс:"}</strong>{" "}
-                {t("game.exchange_rate", { ton: 1, gt: 100 }) || "1 TON = 100 GT"}
-              </div>
-            </div>
-            <Button
-              onClick={() => setShowCryptoPaymentModal(false)}
-              className="w-full bg-purple-600 hover:bg-purple-700"
-            >
-              {t("game.understood") || "Понятно"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <div className="fixed bottom-0 left-0 right-0 bg-black/40 backdrop-blur-md border-t border-purple-500/30 safe-area-inset-bottom">
-        <div className="grid grid-cols-8 gap-1 p-2">
-          <button
+        <div className="container mx-auto grid grid-cols-5 gap-1 p-2">
+          <Button
+            variant="ghost"
             onClick={() => setActiveTab("main")}
-            className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-all ${activeTab === "main" ? "bg-purple-600/30 text-purple-300" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
+            className={`flex flex-col items-center gap-1 h-auto py-2 ${
+              activeTab === "main" ? "text-purple-400" : "text-gray-400"
+            }`}
           >
-            <HomeIcon className={`w-5 h-5 ${activeTab === "main" ? "text-purple-400" : ""}`} />{" "}
-            {/* Changed from Home */}
-            <span className="text-[10px] font-medium leading-tight text-center">{t("game.main") || "Главная"}</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("upgrade")}
-            className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-all ${activeTab === "upgrade" ? "bg-purple-600/30 text-purple-300" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
+            <HomeIcon className="w-5 h-5" />
+            <span className="text-[10px]">{t("tab.main")}</span>
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => setActiveTab("miners")}
+            className={`flex flex-col items-center gap-1 h-auto py-2 ${
+              activeTab === "miners" ? "text-purple-400" : "text-gray-400"
+            }`}
           >
-            <Zap className={`w-5 h-5 ${activeTab === "upgrade" ? "text-purple-400" : ""}`} />
-            <span className="text-[10px] font-medium leading-tight text-center">
-              {t("game.upgrades") || "Прокачка"}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab("mine")}
-            className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-all ${activeTab === "mine" ? "bg-purple-600/30 text-purple-300" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
-          >
-            <Pickaxe className={`w-5 h-5 ${activeTab === "mine" ? "text-purple-400" : ""}`} />
-            <span className="text-[10px] font-medium leading-tight text-center">{t("game.mining") || "Майнинг"}</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("tasks")}
-            className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-all ${activeTab === "tasks" ? "bg-purple-600/30 text-purple-300" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
-          >
-            <Trophy className={`w-5 h-5 ${activeTab === "tasks" ? "text-purple-400" : ""}`} />
-            <span className="text-[10px] font-medium leading-tight text-center">{t("game.tasks") || "Задания"}</span>
-          </button>
-          <button
+            <Pickaxe className="w-5 h-5" />
+            <span className="text-[10px]">{t("tab.miners")}</span>
+          </Button>
+          <Button
+            variant="ghost"
             onClick={() => setActiveTab("friends")}
-            className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-all ${activeTab === "friends" ? "bg-purple-600/30 text-purple-300" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
+            className={`flex flex-col items-center gap-1 h-auto py-2 ${
+              activeTab === "friends" ? "text-purple-400" : "text-gray-400"
+            }`}
           >
-            <Users className={`w-5 h-5 ${activeTab === "friends" ? "text-purple-400" : ""}`} />
-            <span className="text-[10px] font-medium leading-tight text-center">{t("game.friends") || "Друзья"}</span>
-          </button>
-          <button
+            <Users className="w-5 h-5" />
+            <span className="text-[10px]">{t("tab.friends")}</span>
+          </Button>
+          <Button
+            variant="ghost"
             onClick={() => setActiveTab("shop")}
-            className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-all ${activeTab === "shop" ? "bg-purple-600/30 text-purple-300" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
+            className={`flex flex-col items-center gap-1 h-auto py-2 ${
+              activeTab === "shop" ? "text-purple-400" : "text-gray-400"
+            }`}
           >
-            <ShoppingCart className={`w-5 h-5 ${activeTab === "shop" ? "text-purple-400" : ""}`} />
-            <span className="text-[10px] font-medium leading-tight text-center">{t("game.shop") || "Магазин"}</span>
-          </button>
-          <button
+            <ShoppingBag className="w-5 h-5" />
+            <span className="text-[10px]">{t("tab.shop")}</span>
+          </Button>
+          <Button
+            variant="ghost"
             onClick={() => {
               setActiveTab("leaderboard")
-              if (!leaderboardData.daily.length) loadLeaderboard("daily")
+              loadLeaderboard(leaderboardPeriod)
             }}
-            className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-all ${activeTab === "leaderboard" ? "bg-purple-600/30 text-purple-300" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
+            className={`flex flex-col items-center gap-1 h-auto py-2 ${
+              activeTab === "leaderboard" ? "text-purple-400" : "text-gray-400"
+            }`}
           >
-            <Crown className={`w-5 h-5 ${activeTab === "leaderboard" ? "text-purple-400" : ""}`} />
-            <span className="text-[10px] font-medium leading-tight text-center">
-              {t("game.leaderboard") || "Лидеры"}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab("about")}
-            className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-all ${activeTab === "about" ? "bg-purple-600/30 text-purple-300" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
-          >
-            <Info className={`w-5 h-5 ${activeTab === "about" ? "text-purple-400" : ""}`} />
-            <span className="text-[10px] font-medium leading-tight text-center">{t("game.about") || "О нас"}</span>
-          </button>
+            <Crown className="w-5 h-5" />
+            <span className="text-[10px]">{t("tab.leaderboard")}</span>
+          </Button>
         </div>
       </div>
+
+      <Dialog open={showPigsModal} onOpenChange={setShowPigsModal}>
+        <DialogContent className="bg-black/90 backdrop-blur-md border-purple-500/30 text-white max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl sm:text-2xl font-bold">{t("pigs.collection")}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-3 gap-3 sm:gap-4 p-2">
+            {PIGS.map((pig) => {
+              const isUnlocked = unlockedPigs.includes(pig.id)
+              const isActive = activePigId === pig.id
+              return (
+                <div
+                  key={pig.id}
+                  onClick={() => isUnlocked && setActivePigId(pig.id)}
+                  className={`relative rounded-lg p-2 sm:p-3 cursor-pointer transition-all ${
+                    isActive
+                      ? "bg-gradient-to-br from-purple-600 to-blue-600 ring-2 ring-yellow-400"
+                      : isUnlocked
+                        ? "bg-gradient-to-br from-purple-900/50 to-blue-900/30 hover:scale-105"
+                        : "bg-black/50 opacity-50"
+                  }`}
+                >
+                  {!isUnlocked && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded-lg">
+                      <Lock className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
+                    </div>
+                  )}
+                  <img
+                    src={pig.icon || "/placeholder.svg"}
+                    alt={pig.name[language]}
+                    className="w-full h-auto rounded-lg"
+                  />
+                  <div className="mt-2 text-center">
+                    <div className="text-xs sm:text-sm font-semibold truncate">{pig.name[language]}</div>
+                    <Badge
+                      variant="outline"
+                      className={`mt-1 text-[10px] ${
+                        pig.rarity === "LIMITED"
+                          ? "bg-yellow-600"
+                          : pig.rarity === "EVENT"
+                            ? "bg-red-600"
+                            : pig.rarity === "RARE"
+                              ? "bg-purple-600"
+                              : "bg-gray-600"
+                      }`}
+                    >
+                      {pig.rarity}
+                    </Badge>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showLanguageModal} onOpenChange={setShowLanguageModal}>
+        <DialogContent className="bg-black/90 backdrop-blur-md border-purple-500/30 text-white max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-xl sm:text-2xl font-bold">{t("settings.language")}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            {[
+              { code: "en", flag: "🇺🇸", name: "English" },
+              { code: "ru", flag: "🇷🇺", name: "Русский" },
+              { code: "uk", flag: "🇺🇦", name: "Українська" },
+              { code: "kk", flag: "🇰🇿", name: "Қазақша" },
+              { code: "pt", flag: "🇧🇷", name: "Português" },
+              { code: "be", flag: "🇧🇾", name: "Беларуская" },
+              { code: "es", flag: "🇪🇸", name: "Español" },
+              { code: "de", flag: "🇩🇪", name: "Deutsch" },
+              { code: "pl", flag: "🇵🇱", name: "Polski" },
+              { code: "fr", flag: "🇫🇷", name: "Français" },
+              { code: "zh", flag: "🇨🇳", name: "中文" },
+              { code: "ja", flag: "🇯🇵", name: "日本語" },
+              { code: "ko", flag: "🇰🇷", name: "한국어" },
+              { code: "tr", flag: "🇹🇷", name: "Türkçe" },
+            ].map((lang) => (
+              <Button
+                key={lang.code}
+                onClick={() => {
+                  setLanguage(lang.code as Language)
+                  setShowLanguageModal(false)
+                }}
+                className={`flex items-center gap-2 justify-start h-auto py-3 text-sm ${
+                  language === lang.code ? "bg-purple-600" : "bg-black/30"
+                }`}
+              >
+                <span className="text-2xl">{lang.flag}</span>
+                <span>{lang.name}</span>
+              </Button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -7,6 +7,12 @@ export const translations: Record<Language, Record<string, string>> = {
     "game.carrots": "Carrots",
     "game.tap": "Tap",
     "game.energy": "Energy",
+    "game.loading": "Loading...",
+    "game.telegram_only": "This game can only be played through Telegram",
+    "game.open_in_telegram": "Open in Telegram Bot",
+    "game.passive_income": "Passive income",
+    "game.referral_bonus": "referral bonus",
+    "game.tap_power": "Tap power",
 
     // Tabs
     "tab.main": "Main",
@@ -20,6 +26,11 @@ export const translations: Record<Language, Record<string, string>> = {
     "shop.buyGT": "Buy GT",
     "shop.buyForStars": "Buy for Stars",
     "shop.popular": "Popular",
+    "shop.buy_gt_description": "Buy GT with Telegram Stars",
+    "shop.buy_for_stars": "Buy for Telegram Stars",
+    "shop.check_bot_message": "Check your Telegram bot for payment",
+    "shop.purchase_success": "Purchase successful! You received",
+    "shop.purchase_error": "Purchase failed. Please try again.",
 
     // Friends
     "friends.title": "Invite Friends",
@@ -29,6 +40,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "friends.share": "Share",
     "friends.count": "Friends",
     "friends.bonus": "Bonus",
+    "friends.link_copied": "Referral link copied!",
 
     // Leaderboard
     "leaderboard.title": "Leaderboard",
@@ -41,12 +53,24 @@ export const translations: Record<Language, Record<string, string>> = {
     "level.current": "Level",
     "level.xp": "XP",
     "level.next": "Next level",
+
+    // Pigs
+    "pigs.collection": "Guinea Pig Collection",
+
+    // Settings
+    "settings.language": "Select Language",
   },
   ru: {
     "game.title": "Морская Свинка Кликер",
     "game.carrots": "Морковки",
     "game.tap": "Тап",
     "game.energy": "Энергия",
+    "game.loading": "Загрузка...",
+    "game.telegram_only": "Эта игра доступна только через Telegram",
+    "game.open_in_telegram": "Открыть в боте Telegram",
+    "game.passive_income": "Пассивный доход",
+    "game.referral_bonus": "реферальный бонус",
+    "game.tap_power": "Сила тапа",
 
     "tab.main": "Главная",
     "tab.miners": "Майнеры",
@@ -58,6 +82,11 @@ export const translations: Record<Language, Record<string, string>> = {
     "shop.buyGT": "Купить GT",
     "shop.buyForStars": "Купить за Stars",
     "shop.popular": "Популярно",
+    "shop.buy_gt_description": "Покупайте GT за Telegram Stars",
+    "shop.buy_for_stars": "Купить за Telegram Stars",
+    "shop.check_bot_message": "Проверьте бота Telegram для оплаты",
+    "shop.purchase_success": "Покупка успешна! Вы получили",
+    "shop.purchase_error": "Ошибка покупки. Попробуйте снова.",
 
     "friends.title": "Пригласить друзей",
     "friends.description": "Получай 10% от заработка друзей!",
@@ -66,6 +95,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "friends.share": "Поделиться",
     "friends.count": "Друзей",
     "friends.bonus": "Бонус",
+    "friends.link_copied": "Реферальная ссылка скопирована!",
 
     "leaderboard.title": "Таблица лидеров",
     "leaderboard.top100": "Топ 100 игроков",
@@ -76,12 +106,22 @@ export const translations: Record<Language, Record<string, string>> = {
     "level.current": "Уровень",
     "level.xp": "Опыт",
     "level.next": "Следующий уровень",
+
+    "pigs.collection": "Коллекция морских свинок",
+
+    "settings.language": "Выбрать язык",
   },
   uk: {
     "game.title": "Морська Свинка Клікер",
     "game.carrots": "Морквинки",
     "game.tap": "Тап",
     "game.energy": "Енергія",
+    "game.loading": "Завантаження...",
+    "game.telegram_only": "Ця гра доступна лише через Telegram",
+    "game.open_in_telegram": "Відкрити в боті Telegram",
+    "game.passive_income": "Пасивний дохід",
+    "game.referral_bonus": "бонус за реферал",
+    "game.tap_power": "Сила тапу",
 
     "tab.main": "Головна",
     "tab.miners": "Майнери",
@@ -93,14 +133,20 @@ export const translations: Record<Language, Record<string, string>> = {
     "shop.buyGT": "Купити GT",
     "shop.buyForStars": "Купити за Stars",
     "shop.popular": "Популярно",
+    "shop.buy_gt_description": "Купуйте GT за Telegram Stars",
+    "shop.buy_for_stars": "Купити за Telegram Stars",
+    "shop.check_bot_message": "Перевірте бота Telegram для оплати",
+    "shop.purchase_success": "Покупка успішна! Ви отримали",
+    "shop.purchase_error": "Помилка покупки. Спробуйте ще раз.",
 
     "friends.title": "Запросити друзів",
-    "friends.description": "Отримуй 10% від заробітку друзів!",
+    "friends.description": "Отримуйте 10% від заробітку друзів!",
     "friends.link": "Твоє реферальне посилання",
     "friends.copy": "Копіювати",
     "friends.share": "Поділитися",
     "friends.count": "Друзів",
     "friends.bonus": "Бонус",
+    "friends.link_copied": "Реферальне посилання скопійоване!",
 
     "leaderboard.title": "Таблиця лідерів",
     "leaderboard.top100": "Топ 100 гравців",
@@ -111,12 +157,22 @@ export const translations: Record<Language, Record<string, string>> = {
     "level.current": "Рівень",
     "level.xp": "Досвід",
     "level.next": "Наступний рівень",
+
+    "pigs.collection": "Колекція морських свинок",
+
+    "settings.language": "Вибрати мову",
   },
   kk: {
     "game.title": "Теңіз шошқасы кликері",
     "game.carrots": "Сәбіз",
     "game.tap": "Шерту",
     "game.energy": "Энергия",
+    "game.loading": "Жүктеу...",
+    "game.telegram_only": "Осы ойын тек Telegram арқылы ойнауға болады",
+    "game.open_in_telegram": "Telegram ботында ашыңыз",
+    "game.passive_income": "Пассивтік енгізім",
+    "game.referral_bonus": "реферал бонусы",
+    "game.tap_power": "Тап күрші",
 
     "tab.main": "Басты",
     "tab.miners": "Майнерлер",
@@ -124,12 +180,44 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "Достар",
     "tab.shop": "Дүкен",
     "tab.leaderboard": "Көшбасшылар",
+
+    "shop.buyGT": "GT қосу",
+    "shop.buyForStars": "Stars үшін қосу",
+    "shop.popular": "Таңдауыңызға ұмтын",
+
+    "friends.title": "Достарды етіңіз",
+    "friends.description": "Достарыңыздан 10% алуы мүмкін!",
+    "friends.link": "Сіздің рефералық сылтыңыз",
+    "friends.copy": "Көшіру",
+    "friends.share": "Бөлісіңіз",
+    "friends.count": "Достар",
+    "friends.bonus": "Бонус",
+
+    "leaderboard.title": "Көшбасшылар таблағы",
+    "leaderboard.top100": "Таңғы 100 ойнаушы",
+    "leaderboard.daily": "Күн",
+    "leaderboard.weekly": "Аптаны",
+    "leaderboard.alltime": "Барлық уақыт",
+
+    "level.current": "Көрсетім",
+    "level.xp": "Опыт",
+    "level.next": "Келесі көрсетім",
+
+    "pigs.collection": "Теңіз шошқасы топоры",
+
+    "settings.language": "Тіл таңдау",
   },
   pt: {
     "game.title": "Porquinho-da-Índia Clicker",
     "game.carrots": "Cenouras",
     "game.tap": "Toque",
     "game.energy": "Energia",
+    "game.loading": "Carregando...",
+    "game.telegram_only": "Este jogo pode ser jogado apenas através do Telegram",
+    "game.open_in_telegram": "Abrir no Bot do Telegram",
+    "game.passive_income": "Renda passiva",
+    "game.referral_bonus": "bônus de indicação",
+    "game.tap_power": "Potência de toque",
 
     "tab.main": "Principal",
     "tab.miners": "Mineiros",
@@ -137,12 +225,45 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "Amigos",
     "tab.shop": "Loja",
     "tab.leaderboard": "Classificação",
+
+    "shop.buyGT": "Comprar GT",
+    "shop.buyForStars": "Comprar por Stars",
+    "shop.popular": "Popular",
+
+    "friends.title": "Convidar amigos",
+    "friends.description": "Obter 10% dos ganhos dos seus amigos!",
+    "friends.link": "Seu link de indicação",
+    "friends.copy": "Copiar",
+    "friends.share": "Compartilhar",
+    "friends.count": "Amigos",
+    "friends.bonus": "Bônus",
+    "friends.link_copied": "Link de indicação copiado!",
+
+    "leaderboard.title": "Classificação",
+    "leaderboard.top100": "Top 100 jogadores",
+    "leaderboard.daily": "Dia",
+    "leaderboard.weekly": "Semana",
+    "leaderboard.alltime": "Tempo todo",
+
+    "level.current": "Nível",
+    "level.xp": "Experiência",
+    "level.next": "Próximo nível",
+
+    "pigs.collection": "Coleção de Porquinhos-da-Índia",
+
+    "settings.language": "Selecionar idioma",
   },
   be: {
     "game.title": "Марская свінка клікер",
     "game.carrots": "Маркоўка",
     "game.tap": "Тап",
     "game.energy": "Энергія",
+    "game.loading": "Загрузка...",
+    "game.telegram_only": "Гэта ігра можа быць груйнуема толькі праз Telegram",
+    "game.open_in_telegram": "Адкрыце у боте Telegram",
+    "game.passive_income": "Пасыўны дадзен",
+    "game.referral_bonus": "бонус з падканні",
+    "game.tap_power": "Сила тапу",
 
     "tab.main": "Галоўная",
     "tab.miners": "Майнеры",
@@ -150,12 +271,45 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "Сябры",
     "tab.shop": "Магазін",
     "tab.leaderboard": "Лідары",
+
+    "shop.buyGT": "Купіце GT",
+    "shop.buyForStars": "Купіце за Stars",
+    "shop.popular": "Популярна",
+
+    "friends.title": "Папраўце сябры",
+    "friends.description": "Атрымаеце 10% вынка сяброў!",
+    "friends.link": "Ваша падканнікавая спасылка",
+    "friends.copy": "Капіраваеце",
+    "friends.share": "Адзінкаеце",
+    "friends.count": "Сябры",
+    "friends.bonus": "Бонус",
+    "friends.link_copied": "Падканнікавая спасылка капіравана!",
+
+    "leaderboard.title": "Лідары",
+    "leaderboard.top100": "Топ 100 груйнушчыў",
+    "leaderboard.daily": "Дзень",
+    "leaderboard.weekly": "Тыдзень",
+    "leaderboard.alltime": "Усё час",
+
+    "level.current": "Рэвель",
+    "level.xp": "Эксперынс",
+    "level.next": "Наступны рэвель",
+
+    "pigs.collection": "Коллекцыя марскіх свінок",
+
+    "settings.language": "Выбраць мову",
   },
   es: {
     "game.title": "Cobaya Clicker",
     "game.carrots": "Zanahorias",
     "game.tap": "Toque",
     "game.energy": "Energía",
+    "game.loading": "Cargando...",
+    "game.telegram_only": "Este juego solo se puede jugar a través de Telegram",
+    "game.open_in_telegram": "Abrir en Bot de Telegram",
+    "game.passive_income": "Ingreso pasivo",
+    "game.referral_bonus": "bono de referencia",
+    "game.tap_power": "Potencia de toque",
 
     "tab.main": "Principal",
     "tab.miners": "Mineros",
@@ -163,12 +317,45 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "Amigos",
     "tab.shop": "Tienda",
     "tab.leaderboard": "Clasificación",
+
+    "shop.buyGT": "Comprar GT",
+    "shop.buyForStars": "Comprar por Stars",
+    "shop.popular": "Popular",
+
+    "friends.title": "Invita a amigos",
+    "friends.description": "¡Obtén el 10% de los ingresos de tus amigos!",
+    "friends.link": "Tu enlace de referencia",
+    "friends.copy": "Copiar",
+    "friends.share": "Compartir",
+    "friends.count": "Amigos",
+    "friends.bonus": "Bono",
+    "friends.link_copied": "¡Enlace de referencia copiado!",
+
+    "leaderboard.title": "Clasificación",
+    "leaderboard.top100": "Top 100 jugadores",
+    "leaderboard.daily": "Día",
+    "leaderboard.weekly": "Semana",
+    "leaderboard.alltime": "Todo el tiempo",
+
+    "level.current": "Nivel",
+    "level.xp": "Experiencia",
+    "level.next": "Siguiente nivel",
+
+    "pigs.collection": "Colección de Conejos de Guinea",
+
+    "settings.language": "Seleccionar idioma",
   },
   de: {
     "game.title": "Meerschweinchen Clicker",
     "game.carrots": "Karotten",
     "game.tap": "Tippen",
     "game.energy": "Energie",
+    "game.loading": "Laden...",
+    "game.telegram_only": "Dieses Spiel kann nur über Telegram gespielt werden",
+    "game.open_in_telegram": "Öffnen Sie im Telegram Bot",
+    "game.passive_income": "Passivinkommen",
+    "game.referral_bonus": "Referalbonus",
+    "game.tap_power": "Tapkraft",
 
     "tab.main": "Haupt",
     "tab.miners": "Bergleute",
@@ -176,25 +363,65 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "Freunde",
     "tab.shop": "Geschäft",
     "tab.leaderboard": "Bestenliste",
+
+    "shop.buyGT": "GT kaufen",
+    "shop.buyForStars": "Kaufen Sie für Stars",
+    "shop.popular": "Beliebt",
+
+    "friends.title": "Freunde einladen",
+    "friends.description": "Erhalten Sie 10% der Einnahmen Ihrer Freunde!",
+    "friends.link": "Ihr Referallink",
+    "friends.copy": "Kopieren",
+    "friends.share": "Teilen",
+    "friends.count": "Freunde",
+    "friends.bonus": "Bonus",
+    "friends.link_copied": "Referallink kopiert!",
+
+    "leaderboard.title": "Bestenliste",
+    "leaderboard.top100": "Top 100 Spieler",
+    "leaderboard.daily": "Tag",
+    "leaderboard.weekly": "Woche",
+    "leaderboard.alltime": "Gesamte Zeit",
+
+    "level.current": "Level",
+    "level.xp": "Erfahrung",
+    "level.next": "Nächster Level",
+
+    "pigs.collection": "Meerschweinchen-Sammlung",
+
+    "settings.language": "Sprache wählen",
   },
   pl: {
     "game.title": "Świnka Morska Clicker",
     "game.carrots": "Marchewki",
     "game.tap": "Stuknięcie",
     "game.energy": "Energia",
-
-    "tab.main": "Główna",
-    "tab.miners": "Górnicy",
-    "tab.tasks": "Zadania",
-    "tab.friends": "Przyjaciele",
-    "tab.shop": "Sklep",
-    "tab.leaderboard": "Ranking",
+    "game.loading": "Ładowanie...",
+    "game.telegram_only": "Ta gra może być grana tylko przez Telegram",
+    "game.open_in_telegram": "Otwórz w Botcie Telegram",
+    "game.passive_income": "Dochód pasywny",
+    "game.referral_bonus": "bonusz za zaproszenie",
+    "game.tap_power": "Moc stuknięcia",
+    "shop.buy_gt_description": "Kupuj GT za Telegram Stars",
+    "shop.buy_for_stars": "Kupuj za Telegram Stars",
+    "shop.check_bot_message": "Sprawdź swojego bota Telegrama dla płatności",
+    "shop.purchase_success": "Zakup udany! Otrzymałeś",
+    "shop.purchase_error": "Zakup nieudany. Spróbuj ponownie.",
+    "friends.link_copied": "Link zaproszeniowy skopiowany!",
+    "pigs.collection": "Kolekcja śwink morskich",
+    "settings.language": "Wybierz język",
   },
   fr: {
     "game.title": "Cochon d'Inde Clicker",
     "game.carrots": "Carottes",
     "game.tap": "Toucher",
     "game.energy": "Énergie",
+    "game.loading": "Chargement...",
+    "game.telegram_only": "Ce jeu ne peut être joué que via Telegram",
+    "game.open_in_telegram": "Ouvrir dans le Bot Telegram",
+    "game.passive_income": "Revenu passif",
+    "game.referral_bonus": "bonus de parrainage",
+    "game.tap_power": "Puissance de touche",
 
     "tab.main": "Principal",
     "tab.miners": "Mineurs",
@@ -202,12 +429,45 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "Amis",
     "tab.shop": "Magasin",
     "tab.leaderboard": "Classement",
+
+    "shop.buyGT": "Acheter GT",
+    "shop.buyForStars": "Acheter pour Stars",
+    "shop.popular": "Populaire",
+
+    "friends.title": "Inviter des amis",
+    "friends.description": "Obtenez 10% des gains de vos amis !",
+    "friends.link": "Votre lien de parrainage",
+    "friends.copy": "Copier",
+    "friends.share": "Partager",
+    "friends.count": "Amis",
+    "friends.bonus": "Bonus",
+    "friends.link_copied": "Lien de parrainage copié !",
+
+    "leaderboard.title": "Classement",
+    "leaderboard.top100": "Top 100 joueurs",
+    "leaderboard.daily": "Jour",
+    "leaderboard.weekly": "Semaine",
+    "leaderboard.alltime": "Tout le temps",
+
+    "level.current": "Niveau",
+    "level.xp": "Expérience",
+    "level.next": "Prochain niveau",
+
+    "pigs.collection": "Collection de Cochons d'Inde",
+
+    "settings.language": "Sélectionner la langue",
   },
   zh: {
     "game.title": "豚鼠点击器",
     "game.carrots": "胡萝卜",
     "game.tap": "点击",
     "game.energy": "能量",
+    "game.loading": "加载中...",
+    "game.telegram_only": "这个游戏只能通过Telegram玩",
+    "game.open_in_telegram": "在Telegram机器人中打开",
+    "game.passive_income": "被动收入",
+    "game.referral_bonus": "推荐奖金",
+    "game.tap_power": "点击力量",
 
     "tab.main": "主要",
     "tab.miners": "矿工",
@@ -215,12 +475,45 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "朋友",
     "tab.shop": "商店",
     "tab.leaderboard": "排行榜",
+
+    "shop.buyGT": "购买GT",
+    "shop.buyForStars": "用Stars购买",
+    "shop.popular": "热门",
+
+    "friends.title": "邀请朋友",
+    "friends.description": "获得你朋友收入的10%!",
+    "friends.link": "你的推荐链接",
+    "friends.copy": "复制",
+    "friends.share": "分享",
+    "friends.count": "朋友",
+    "friends.bonus": "奖金",
+    "friends.link_copied": "推荐链接已复制!",
+
+    "leaderboard.title": "排行榜",
+    "leaderboard.top100": "前100名玩家",
+    "leaderboard.daily": "日",
+    "leaderboard.weekly": "周",
+    "leaderboard.alltime": "总时间",
+
+    "level.current": "等级",
+    "level.xp": "经验",
+    "level.next": "下一个等级",
+
+    "pigs.collection": "豚鼠收藏",
+
+    "settings.language": "选择语言",
   },
   ja: {
     "game.title": "モルモットクリッカー",
     "game.carrots": "ニンジン",
     "game.tap": "タップ",
     "game.energy": "エネルギー",
+    "game.loading": "読み込み中...",
+    "game.telegram_only": "このゲームはTelegramを通じてのみプレイできます",
+    "game.open_in_telegram": "Telegramボットで開く",
+    "game.passive_income": "パッシブインカム",
+    "game.referral_bonus": "紹介ボーナス",
+    "game.tap_power": "タップ力",
 
     "tab.main": "メイン",
     "tab.miners": "マイナー",
@@ -228,12 +521,45 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "友達",
     "tab.shop": "ショップ",
     "tab.leaderboard": "リーダーボード",
+
+    "shop.buyGT": "GTを購入",
+    "shop.buyForStars": "Starsで購入",
+    "shop.popular": "人気",
+
+    "friends.title": "友達を招待",
+    "friends.description": "あなたの友達の収入の10%を獲得できます!",
+    "friends.link": "あなたの紹介リンク",
+    "friends.copy": "コピー",
+    "friends.share": "シェア",
+    "friends.count": "友達",
+    "friends.bonus": "ボーナス",
+    "friends.link_copied": "紹介リンクをコピーしました!",
+
+    "leaderboard.title": "リーダーボード",
+    "leaderboard.top100": "トップ100プレイヤー",
+    "leaderboard.daily": "日",
+    "leaderboard.weekly": "週",
+    "leaderboard.alltime": "全期間",
+
+    "level.current": "レベル",
+    "level.xp": "経験",
+    "level.next": "次のレベル",
+
+    "pigs.collection": "モルモットコレクション",
+
+    "settings.language": "言語を選択",
   },
   ko: {
     "game.title": "기니피그 클리커",
     "game.carrots": "당근",
     "game.tap": "탭",
     "game.energy": "에너지",
+    "game.loading": "로딩 중...",
+    "game.telegram_only": "이 게임은 Telegram을 통해만 플레이할 수 있습니다",
+    "game.open_in_telegram": "Telegram 봇에서 열기",
+    "game.passive_income": "패시브 수입",
+    "game.referral_bonus": "추천 보너스",
+    "game.tap_power": "탭 파워",
 
     "tab.main": "메인",
     "tab.miners": "채굴자",
@@ -241,12 +567,45 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "친구",
     "tab.shop": "상점",
     "tab.leaderboard": "순위표",
+
+    "shop.buyGT": "GT 구매",
+    "shop.buyForStars": "Stars로 구매",
+    "shop.popular": "인기",
+
+    "friends.title": "친구 초대",
+    "friends.description": "친구들의 수익의 10%를 얻을 수 있습니다!",
+    "friends.link": "당신의 추천 링크",
+    "friends.copy": "복사",
+    "friends.share": "공유",
+    "friends.count": "친구",
+    "friends.bonus": "보너스",
+    "friends.link_copied": "추천 링크가 복사되었습니다!",
+
+    "leaderboard.title": "순위표",
+    "leaderboard.top100": "상위 100 플레이어",
+    "leaderboard.daily": "일",
+    "leaderboard.weekly": "주",
+    "leaderboard.alltime": "전체 시간",
+
+    "level.current": "레벨",
+    "level.xp": "경험",
+    "level.next": "다음 레벨",
+
+    "pigs.collection": "기니피그 컬렉션",
+
+    "settings.language": "언어 선택",
   },
   tr: {
     "game.title": "Kobay Clicker",
     "game.carrots": "Havuçlar",
     "game.tap": "Dokun",
     "game.energy": "Enerji",
+    "game.loading": "Yükleniyor...",
+    "game.telegram_only": "Bu oyun sadece Telegram üzerinden oynanabilir",
+    "game.open_in_telegram": "Telegram Botunda Aç",
+    "game.passive_income": "Pasif gelir",
+    "game.referral_bonus": "referans bonusu",
+    "game.tap_power": "Tık gücü",
 
     "tab.main": "Ana",
     "tab.miners": "Madenciler",
@@ -254,6 +613,33 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "Arkadaşlar",
     "tab.shop": "Mağaza",
     "tab.leaderboard": "Sıralama",
+
+    "shop.buyGT": "GT Satın Al",
+    "shop.buyForStars": "Stars için Satın Al",
+    "shop.popular": "Popüler",
+
+    "friends.title": "Arkadaşlarını Davet Et",
+    "friends.description": "Arkadaşlarınızdan kazancınızın 10%ını elde edebilirsiniz!",
+    "friends.link": "Referans bağlantınız",
+    "friends.copy": "Kopyala",
+    "friends.share": "Paylaş",
+    "friends.count": "Arkadaşlar",
+    "friends.bonus": "Bonus",
+    "friends.link_copied": "Referans bağlantınız kopyalandı!",
+
+    "leaderboard.title": "Sıralama",
+    "leaderboard.top100": "Top 100 oyuncu",
+    "leaderboard.daily": "Gün",
+    "leaderboard.weekly": "Hafta",
+    "leaderboard.alltime": "Tüm zaman",
+
+    "level.current": "Seviye",
+    "level.xp": "Deneyim",
+    "level.next": "Sonraki seviye",
+
+    "pigs.collection": "Kobay Toplaması",
+
+    "settings.language": "Dil Seç",
   },
 }
 
