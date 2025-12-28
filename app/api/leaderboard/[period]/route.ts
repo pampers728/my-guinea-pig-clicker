@@ -1,16 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server"
+import clientPromise from "@/lib/mongodb"
 
 export async function GET(request: NextRequest, { params }: { params: { period: string } }) {
   try {
     const period = params.period
 
-    // Валидация периода
     if (!["daily", "weekly", "alltime"].includes(period)) {
       return NextResponse.json({ success: false, error: "Invalid period" }, { status: 400 })
     }
 
-    // Если MongoDB не настроен, возвращаем пустой список
-    if (!process.env.MONGO_URI) {
+    if (!clientPromise) {
       return NextResponse.json(
         {
           success: true,
@@ -21,19 +20,43 @@ export async function GET(request: NextRequest, { params }: { params: { period: 
       )
     }
 
-    // Примерные данные для демонстрации
-    const mockLeaderboard = [
-      { rank: 1, username: "Player1", gt: 50000, carrots: 500000 },
-      { rank: 2, username: "Player2", gt: 45000, carrots: 450000 },
-      { rank: 3, username: "Player3", gt: 40000, carrots: 400000 },
-    ]
+    const client = await clientPromise
+    const db = client.db("game")
+    const users = db.collection("players")
+
+    let query = {}
+
+    if (period === "daily") {
+      const oneDayAgo = new Date()
+      oneDayAgo.setDate(oneDayAgo.getDate() - 1)
+      query = { updatedAt: { $gte: oneDayAgo } }
+    } else if (period === "weekly") {
+      const oneWeekAgo = new Date()
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+      query = { updatedAt: { $gte: oneWeekAgo } }
+    }
+
+    const leaderboard = await users
+      .find(query)
+      .sort({ score: -1 })
+      .limit(100)
+      .project({ userId: 1, username: 1, score: 1, level: 1 })
+      .toArray()
+
+    const formattedData = leaderboard.map((user, index) => ({
+      rank: index + 1,
+      username: user.username || `Player ${user.userId}`,
+      score: user.score || 0,
+      level: user.level || 1,
+      avatar: "🐹",
+    }))
 
     return NextResponse.json({
       success: true,
-      data: mockLeaderboard,
+      data: formattedData,
     })
   } catch (error) {
-    console.error("Leaderboard error:", error)
+    console.error("[v0] Leaderboard error:", error)
     return NextResponse.json({ success: false, error: "Failed to load leaderboard" }, { status: 500 })
   }
 }

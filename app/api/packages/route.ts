@@ -5,45 +5,54 @@ export async function GET() {
     {
       gtAmount: 10,
       prices: {
-        stars: 20,
-        uah: 50,
-        usd: 2, // Changed from 1.5 to 2
+        stars: 5, // 10 GT = 5 Stars
+        uah: 20,
+        usd: 1,
       },
       popular: false,
     },
     {
       gtAmount: 50,
       prices: {
-        stars: 100,
-        uah: 200,
-        usd: 6,
+        stars: 20,
+        uah: 80,
+        usd: 3,
       },
       popular: false,
     },
     {
       gtAmount: 100,
       prices: {
-        stars: 200,
-        uah: 400,
-        usd: 12,
+        stars: 35,
+        uah: 150,
+        usd: 5,
       },
       popular: true,
     },
     {
       gtAmount: 500,
       prices: {
-        stars: 1000,
-        uah: 1800,
-        usd: 55,
+        stars: 150,
+        uah: 700,
+        usd: 20,
       },
       popular: false,
     },
     {
       gtAmount: 1000,
       prices: {
-        stars: 2000,
-        uah: 3500,
-        usd: 100,
+        stars: 280,
+        uah: 1400,
+        usd: 40,
+      },
+      popular: false,
+    },
+    {
+      gtAmount: 5000,
+      prices: {
+        stars: 1300,
+        uah: 6500,
+        usd: 180,
       },
       popular: false,
     },

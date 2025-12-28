@@ -6,11 +6,12 @@ const PAYMENT_PROVIDER_TOKEN = process.env.PAYMENT_PROVIDER_TOKEN || "" // For r
 
 // GT packages with prices in different currencies
 const GT_PACKAGES = {
-  "10": { stars: 20, uah: 50, usd: 2 }, // 10 GT = 20 Stars / 50 UAH / $2
-  "50": { stars: 100, uah: 200, usd: 6 }, // 50 GT = 100 Stars / 200 UAH / $6
-  "100": { stars: 200, uah: 400, usd: 12 }, // 100 GT = 200 Stars / 400 UAH / $12
-  "500": { stars: 1000, uah: 1800, usd: 55 }, // 500 GT = 1000 Stars / 1800 UAH / $55
-  "1000": { stars: 2000, uah: 3500, usd: 100 }, // 1000 GT = 2000 Stars / 3500 UAH / $100
+  "10": { stars: 5, uah: 20, usd: 1 },
+  "50": { stars: 20, uah: 80, usd: 3 },
+  "100": { stars: 35, uah: 150, usd: 5 },
+  "500": { stars: 150, uah: 700, usd: 20 },
+  "1000": { stars: 280, uah: 1400, usd: 40 },
+  "5000": { stars: 1300, uah: 6500, usd: 180 },
 }
 
 export async function POST(request: NextRequest) {
