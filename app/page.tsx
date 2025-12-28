@@ -415,41 +415,38 @@ export default function Home() {
   const [referralsCount, setReferralsCount] = useState(0)
 
   useEffect(() => {
-    if (tg.isAvailable && tg.user) {
-      const userLang = tg.user.language_code || "en"
-      const supportedLang: Language = [
-        "en",
-        "ru",
-        "uk",
-        "kk",
-        "pt",
-        "be",
-        "es",
-        "de",
-        "pl",
-        "fr",
-        "zh",
-        "ja",
-        "ko",
-        "tr",
-      ].includes(userLang)
-        ? (userLang as Language)
-        : "en"
-      setLanguage(supportedLang)
+    const userLang = tg.user?.language_code || "en"
+    const supportedLang: Language = [
+      "en",
+      "ru",
+      "uk",
+      "kk",
+      "pt",
+      "be",
+      "es",
+      "de",
+      "pl",
+      "fr",
+      "zh",
+      "ja",
+      "ko",
+      "tr",
+    ].includes(userLang)
+      ? (userLang as Language)
+      : "en"
+    setLanguage(supportedLang)
 
-      const userId = tg.user.id
-      setReferralLink(`https://t.me/GuineaPigClicker_bot?start=${userId}`)
+    const userId = tg.user?.id || Date.now()
+    setReferralLink(`https://t.me/GuineaPigClicker_bot?start=${userId}`)
 
-      loadPlayerData()
-      const startParam = tg.initDataUnsafe?.start_parameter
-      if (startParam) {
-        handleReferral(Number.parseInt(startParam))
-      }
+    loadPlayerData()
+    const startParam = tg.initDataUnsafe?.start_parameter
+    if (startParam) {
+      handleReferral(Number.parseInt(startParam))
     }
-  }, [tg.isAvailable])
+  }, [tg.user])
 
   useEffect(() => {
-    if (!tg.isAvailable || !tg.user) return
     const interval = setInterval(() => {
       savePlayerData()
     }, 10000)
@@ -489,19 +486,15 @@ export default function Home() {
   }, [isLoading])
 
   const loadPlayerData = async () => {
-    if (!tg.user) {
-      console.log("[v0] No Telegram user, skipping load")
-      setIsLoading(false)
-      return
-    }
+    const userId = tg.user?.id || Date.now()
 
-    console.log("[v0] Loading player data for user:", tg.user.id)
+    console.log("[v0] Loading player data for user:", userId)
 
     try {
       const res = await fetch("/api/player/load", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: tg.user.id }),
+        body: JSON.stringify({ userId }),
       })
 
       if (!res.ok) {
@@ -741,24 +734,6 @@ export default function Home() {
         <div className="text-center">
           <div className="mb-4 text-6xl">🐹</div>
           <div className="text-white text-lg">{t("game.loading")}</div>
-        </div>
-      </div>
-    )
-  }
-
-  if (!tg.isAvailable) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4">
-        <div className="max-w-md rounded-lg bg-black/50 p-8 text-center backdrop-blur-sm">
-          <div className="mb-4 text-6xl">🐹</div>
-          <h1 className="mb-4 text-2xl font-bold text-white">Guinea Pig Clicker</h1>
-          <p className="mb-6 text-gray-300">{t("game.telegram_only")}</p>
-          <a
-            href="https://t.me/GuineaPigClicker_bot"
-            className="inline-block rounded-lg bg-gradient-to-r from-green-600 to-orange-600 px-6 py-3 font-semibold text-white transition-all hover:from-green-700 hover:to-orange-700"
-          >
-            {t("game.open_in_telegram")}
-          </a>
         </div>
       </div>
     )

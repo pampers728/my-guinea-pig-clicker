@@ -49,8 +49,10 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return
       }
 
-      const hasInitData = WebApp.initData && WebApp.initData.length > 0
-      console.log("[v0] Has initData:", hasInitData)
+      const isInTelegram = !!WebApp
+      console.log("[v0] Is in Telegram:", isInTelegram)
+      console.log("[v0] InitData:", WebApp.initData)
+      console.log("[v0] InitDataUnsafe:", WebApp.initDataUnsafe)
 
       try {
         WebApp.ready()
@@ -67,9 +69,9 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
 
       const apiObj: WebAppApi = {
-        isAvailable: hasInitData,
-        initDataUnsafe: WebApp.initDataUnsafe,
-        user: WebApp.initDataUnsafe?.user,
+        isAvailable: isInTelegram,
+        initDataUnsafe: WebApp.initDataUnsafe || {},
+        user: WebApp.initDataUnsafe?.user || { id: Date.now(), first_name: "Player" },
         ready: () => WebApp.ready?.(),
         expand: () => WebApp.expand?.(),
         close: () => WebApp.close?.(),
@@ -91,11 +93,11 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       })
     }
 
-    const timeout = setTimeout(checkTelegram, 300)
+    const timeout = setTimeout(checkTelegram, 500)
     const fallbackTimeout = setTimeout(() => {
       console.log("[v0] Fallback: forcing check complete")
       setIsChecking(false)
-    }, 2000)
+    }, 3000)
 
     return () => {
       clearTimeout(timeout)
@@ -109,29 +111,6 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         <div className="text-center p-8">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
           <p className="text-white text-lg">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!api.isAvailable) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-green-900 to-orange-900 p-4">
-        <div className="max-w-md w-full bg-black/50 backdrop-blur-sm rounded-2xl p-8 text-center border border-green-500/30">
-          <div className="text-6xl mb-6">🐹</div>
-          <h1 className="text-3xl font-bold text-white mb-4">Guinea Pig Clicker</h1>
-          <p className="text-gray-300 mb-6">This game can only be opened through the Telegram bot.</p>
-          <p className="text-gray-400 mb-8 text-sm">
-            Please open the game from the official bot in Telegram to start playing.
-          </p>
-          <a
-            href="https://t.me/GuineaPigClicker_bot"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold py-3 px-8 rounded-full hover:from-green-600 hover:to-blue-600 transition-all"
-          >
-            Open in Telegram
-          </a>
         </div>
       </div>
     )
