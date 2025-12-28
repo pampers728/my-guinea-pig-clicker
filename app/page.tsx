@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Progress } from "@/components/ui/progress"
 import {
   Copy,
-  Home,
   Zap,
   Pickaxe,
   Trophy,
@@ -24,8 +23,11 @@ import {
   ShoppingCart,
   Crown,
   Wallet,
+  HomeIcon,
 } from "lucide-react"
 import { TelegramProvider, useTelegram } from "@/components/TelegramProvider"
+import { useTranslation, type Language } from "@/lib/i18n"
+import type { PlayerData } from "@/types/game"
 // Dynamically import TonConnect to avoid SSR issues and potential runtime errors
 let TonConnectModule: any = null
 // </CHANGE> Removed direct import and dynamic import from here
@@ -378,22 +380,33 @@ const ALL_TASKS_POOL: Omit<Task, "progress" | "completed" | "claimed">[] = [
   },
 ]
 
-export default function GuineaPigTapGameWrapper() {
+export default function Home() {
   return (
     <TelegramProvider>
-      <GuineaPigGame />
+      <GameContent />
     </TelegramProvider>
   )
 }
 
-function GuineaPigGame() {
+function GameContent() {
   const tg = useTelegram()
-  const [carrots, setCarrots] = useState<number>(0)
-  const [guineaTokens, setGuineaTokens] = useState<number>(0)
-  const [telegramStars, setTelegramStars] = useState<number>(0)
+
+  const [language, setLanguage] = useState<Language>("en")
+  const { t } = useTranslation(language)
+
+  const [playerData, setPlayerData] = useState<PlayerData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Старые состояния остаются для совместимости UI
+  const [carrots, setCarrots] = useState(0)
+  const [guineaTokens, setGuineaTokens] = useState(0)
+  const [telegramStars, setTelegramStars] = useState(0) // Declare telegramStars
+  const [energy, setEnergy] = useState(1000)
+  const [score, setScore] = useState(0)
+  const [xp, setXP] = useState(0)
+  const [level, setLevel] = useState(1)
   const [carrotsPerClickLevel, setCarrotsPerClickLevel] = useState<number>(1)
   const [maxEnergyLevel, setMaxEnergyLevel] = useState<number>(1)
-  const [energy, setEnergy] = useState<number>(1000)
   const [activeTab, setActiveTab] = useState<string>("main")
   const [referralCode, setReferralCode] = useState<string>("")
   const [showSupportModal, setShowSupportModal] = useState<boolean>(false)
@@ -682,7 +695,7 @@ function GuineaPigGame() {
           const data = window.JSON ? window.JSON.parse(savedData) : JSON.parse(savedData)
           setCarrots(data.carrots || 0)
           setGuineaTokens(data.guineaTokens || 0)
-          setTelegramStars(data.telegramStars || 0)
+          setTelegramStars(data.telegramStars || 0) // Use setTelegramStars
           setCarrotsPerClickLevel(data.carrotsPerClickLevel || 1)
           setMaxEnergyLevel(data.maxEnergyLevel || 1)
           setEnergy(data.energy || 1000)
@@ -838,6 +851,80 @@ function GuineaPigGame() {
     tonWallet, // Include tonWallet in dependencies
     manualWalletAddress, // Include manualWalletAddress in dependencies
   ])
+
+  useEffect(() => {
+    const initializeGame = async () => {
+      if (!tg.isAvailable || !tg.user?.id) {
+        console.log("[v0] Telegram WebApp not available or user not found")
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        const tgLang = tg.user?.language_code || "en"
+        const supportedLang: Language = [
+          "en",
+          "ru",
+          "uk",
+          "kk",
+          "pt",
+          "be",
+          "es",
+          "de",
+          "pl",
+          "fr",
+          "zh",
+          "ja",
+          "ko",
+          "tr",
+        ].includes(tgLang as Language)
+          ? (tgLang as Language)
+          : "en"
+        setLanguage(supportedLang)
+
+        // Загружаем данные игрока
+        const response = await fetch(`/api/player/load`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: tg.user.id,
+            username: tg.user.username,
+          }),
+        })
+
+        if (response.ok) {
+          const data: PlayerData = await response.json()
+          setPlayerData(data)
+
+          // Синхронизируем с локальными состояниями для UI
+          setCarrots(data.carrots)
+          setGuineaTokens(data.guineaTokens)
+          setScore(data.score)
+          setXP(data.xp)
+          setLevel(data.level)
+          setCarrotsPerClickLevel(data.carrotsPerClickLevel)
+          setMaxEnergyLevel(data.maxEnergyLevel)
+          setEnergy(data.energy)
+          setMiners(data.miners)
+          setWeeklyTasks(data.weeklyTasks)
+          setFriends(data.friends)
+          setTaskProgress(data.taskProgress)
+          setLastTaskRotation(data.lastTaskRotation)
+          setLastMiningTime(data.lastMiningTime)
+
+          console.log("[v0] Player data loaded from MongoDB:", data)
+        } else {
+          console.error("[v0] Failed to load player data")
+        }
+      } catch (error) {
+        console.error("[v0] Error initializing game:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    initializeGame()
+  }, [tg.isAvailable, tg.user])
 
   const authenticateUser = async () => {
     try {
@@ -1496,6 +1583,64 @@ function GuineaPigGame() {
 
   const totalIncome = calculateTotalIncomePerHour()
 
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-black via-green-900 to-orange-900">
+        <div className="text-center">
+          <div className="mb-4 text-2xl">🐹</div>
+          <div className="text-white">{t("game.loading") || "Loading..."}</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!tg.isAvailable) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-black via-green-900 to-orange-900 p-4">
+        <div className="max-w-md rounded-lg bg-black/50 p-8 text-center backdrop-blur-sm">
+          <div className="mb-4 text-6xl">🐹</div>
+          <h1 className="mb-4 text-2xl font-bold text-white">Guinea Pig Clicker</h1>
+          <p className="mb-6 text-gray-300">This game can only be played through Telegram</p>
+          <a
+            href="https://t.me/GuineaPigClicker_bot"
+            className="inline-block rounded-lg bg-gradient-to-r from-green-600 to-orange-600 px-6 py-3 font-semibold text-white transition-all hover:from-green-700 hover:to-orange-700"
+          >
+            Open in Telegram Bot
+          </a>
+        </div>
+      </div>
+    )
+  }
+
+  const handleGuineaPigClick = () => {
+    if (energy > 0 && playerData) {
+      // Ensure playerData is loaded
+      const clickPower = carrotsPerClickLevel
+      const newCarrots = carrots + clickPower
+      const newScore = score + clickPower
+      const newXP = xp + clickPower
+      const newEnergy = energy - 1
+
+      setCarrots(newCarrots)
+      setScore(newScore)
+      setXP(newXP)
+      setEnergy(newEnergy)
+
+      // Проверка повышения уровня
+      const xpForNextLevel = level * 1000
+      if (newXP >= xpForNextLevel) {
+        setLevel(level + 1)
+        setXP(newXP - xpForNextLevel)
+        console.log(`[v0] Level up! New level: ${level + 1}`)
+      }
+
+      setPlayerData({
+        ...playerData,
+        totalClicks: playerData.totalClicks + 1,
+      })
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white pb-24">
       <div className="sticky top-0 z-10 bg-black/40 backdrop-blur-md border-b border-purple-500/30 p-3">
@@ -1508,6 +1653,15 @@ function GuineaPigGame() {
             <div className="flex items-center gap-1.5 bg-black/30 rounded-full px-3 py-1.5">
               <span className="text-lg">⭐</span>
               <span className="font-bold text-blue-400 text-sm">{telegramStars}</span>
+            </div>
+            {/* Display XP and Level */}
+            <div className="flex items-center gap-1.5 bg-black/30 rounded-full px-3 py-1.5">
+              <span className="text-lg">✨</span>
+              <span className="font-bold text-indigo-400 text-sm">{xp} XP</span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-black/30 rounded-full px-3 py-1.5">
+              <span className="text-lg">🚀</span>
+              <span className="font-bold text-gray-300 text-sm">Lvl {level}</span>
             </div>
           </div>
           <div className="flex gap-2">
@@ -1544,7 +1698,7 @@ function GuineaPigGame() {
               )}
               <div
                 className="w-64 h-64 mx-auto rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center cursor-pointer transform transition-transform active:scale-95 shadow-2xl"
-                onClick={handleTap}
+                onClick={handleGuineaPigClick} // Updated click handler
               >
                 <img
                   src="/cute-guinea-pig-with-glasses-in-business-suit.jpg"
@@ -1561,7 +1715,9 @@ function GuineaPigGame() {
                   {energy}/{getCurrentMaxEnergy()}
                 </span>
               </div>
-              <p className="text-sm text-gray-400">Тап = {getCurrentCarrotsPerClick()} 🥕</p>
+              <p className="text-sm text-gray-400">
+                {t("game.click_power") || "Tap"} = {getCurrentCarrotsPerClick()} 🥕
+              </p>
             </div>
           </div>
         )}
@@ -1569,15 +1725,17 @@ function GuineaPigGame() {
         {activeTab === "upgrade" && (
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold text-white">Прокачка</h2>
+              <h2 className="text-2xl font-bold text-white">{t("game.upgrades") || "Прокачка"}</h2>
             </div>
             <div className="space-y-4">
               <Card className="bg-gradient-to-br from-orange-900/30 to-red-900/20 border-orange-500/30 p-4">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-semibold text-white">Морковки за клик</h3>
-                      <div className="text-sm text-gray-400">Уровень {carrotsPerClickLevel}/10</div>
+                      <h3 className="font-semibold text-white">{t("game.carrots_per_click") || "Морковки за клик"}</h3>
+                      <div className="text-sm text-gray-400">
+                        {t("game.level", { level: carrotsPerClickLevel })}/{t("game.max_level", { level: 10 })}
+                      </div>
                     </div>
                     <div className="text-lg font-bold text-orange-400">{getCurrentCarrotsPerClick()} 🥕</div>
                   </div>
@@ -1592,7 +1750,10 @@ function GuineaPigGame() {
                       }
                       className="w-full bg-orange-600 hover:bg-orange-700"
                     >
-                      Улучшить за {getCarrotsUpgradeCost().toLocaleString()} {carrotsPerClickLevel >= 7 ? "GT" : "🥕"}
+                      {t("game.upgrade_for", {
+                        cost: getCarrotsUpgradeCost().toLocaleString(),
+                        currency: carrotsPerClickLevel >= 7 ? "GT" : "🥕",
+                      })}
                     </Button>
                   ) : (
                     <Badge className="w-full justify-center bg-gradient-to-r from-orange-500 to-red-500">МАКС</Badge>
@@ -1603,8 +1764,10 @@ function GuineaPigGame() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-semibold text-white">Максимальная энергия</h3>
-                      <div className="text-sm text-gray-400">Уровень {maxEnergyLevel}/10</div>
+                      <h3 className="font-semibold text-white">{t("game.max_energy") || "Максимальная энергия"}</h3>
+                      <div className="text-sm text-gray-400">
+                        {t("game.level", { level: maxEnergyLevel })}/{t("game.max_level", { level: 10 })}
+                      </div>
                     </div>
                     <div className="text-lg font-bold text-yellow-400">{getCurrentMaxEnergy()}</div>
                   </div>
@@ -1617,7 +1780,10 @@ function GuineaPigGame() {
                       }
                       className="w-full bg-yellow-600 hover:bg-yellow-700"
                     >
-                      Улучшить за {getEnergyUpgradeCost().toLocaleString()} {maxEnergyLevel >= 7 ? "GT" : "🥕"}
+                      {t("game.upgrade_for", {
+                        cost: getEnergyUpgradeCost().toLocaleString(),
+                        currency: maxEnergyLevel >= 7 ? "GT" : "🥕",
+                      })}
                     </Button>
                   ) : (
                     <Badge className="w-full justify-center bg-gradient-to-r from-yellow-500 to-orange-500">МАКС</Badge>
@@ -1631,22 +1797,24 @@ function GuineaPigGame() {
         {activeTab === "mine" && (
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold text-white">Майнеры</h2>
-              <p className="text-sm text-gray-400">Покупайте майнеров для пассивного дохода GT</p>
+              <h2 className="text-2xl font-bold text-white">{t("game.miners") || "Майнеры"}</h2>
+              <p className="text-sm text-gray-400">
+                {t("game.buy_miners") || "Покупайте майнеров для пассивного дохода GT"}
+              </p>
             </div>
             {totalIncome > 0 ? (
               <Card className="bg-gradient-to-br from-green-900/30 to-emerald-900/20 border-green-500/30 p-4">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-sm text-gray-300">Пассивный доход</div>
+                      <div className="text-sm text-gray-300">{t("game.passive_income") || "Пассивный доход"}</div>
                       <div className="text-2xl font-bold text-green-400">+{totalIncome.toFixed(4)} GT/час</div>
                       <div className="text-xs text-gray-400">+{(totalIncome / 60).toFixed(6)} GT/мин</div>
                     </div>
                     <Pickaxe className="w-12 h-12 text-green-400 animate-pulse" />
                   </div>
                   <div className="flex justify-between text-sm text-gray-300">
-                    <span>До следующего начисления</span>
+                    <span>{t("game.time_to_next_payout") || "До следующего начисления"}</span>
                     <span className="font-mono text-green-400">{miningSecondsLeft}с</span>
                   </div>
                   <Progress value={((60 - miningSecondsLeft) / 60) * 100} className="h-3" />
@@ -1656,9 +1824,10 @@ function GuineaPigGame() {
               <Card className="bg-gradient-to-br from-orange-900/30 to-red-900/20 border-orange-500/30 p-4">
                 <div className="text-center space-y-2">
                   <Pickaxe className="w-12 h-12 text-orange-400 mx-auto" />
-                  <div className="text-lg font-semibold text-white">Майнеры не активны</div>
+                  <div className="text-lg font-semibold text-white">{t("game.no_miners") || "Майнеры не активны"}</div>
                   <div className="text-sm text-gray-400">
-                    Купите первого майнера ниже чтобы начать зарабатывать GT автоматически!
+                    {t("game.buy_first_miner") ||
+                      "Купите первого майнера ниже чтобы начать зарабатывать GT автоматически!"}
                   </div>
                 </div>
               </Card>
@@ -1679,7 +1848,7 @@ function GuineaPigGame() {
                           <div>
                             <h3 className="font-semibold text-white">{miner.name}</h3>
                             <Badge variant="outline" className="text-xs">
-                              Уровень {miner.level}
+                              {t("game.level", { level: miner.level })}
                             </Badge>
                           </div>
                         </div>
@@ -1727,8 +1896,8 @@ function GuineaPigGame() {
         {activeTab === "tasks" && (
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold text-white">Еженедельные задания</h2>
-              <p className="text-xs text-gray-400">Обновляются каждую неделю</p>
+              <h2 className="text-2xl font-bold text-white">{t("game.weekly_tasks") || "Еженедельные задания"}</h2>
+              <p className="text-xs text-gray-400">{t("game.tasks_reset") || "Обновляются каждую неделю"}</p>
             </div>
             <div className="space-y-4">
               {weeklyTasks.map((task) => (
@@ -1746,7 +1915,7 @@ function GuineaPigGame() {
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Прогресс</span>
+                        <span className="text-gray-400">{t("game.progress") || "Прогресс"}</span>
                         <span className="text-white">
                           {task.progress}/{task.target}
                         </span>
@@ -1766,7 +1935,7 @@ function GuineaPigGame() {
                         onClick={() => claimTaskReward(task.id)}
                         className="bg-purple-600 hover:bg-purple-700"
                       >
-                        {task.claimed ? "Получено" : task.completed ? "Забрать" : "В процессе"}
+                        {task.claimed ? t("game.claimed") : task.completed ? t("game.claim") : t("game.in_progress")}
                       </Button>
                     </div>
                   </div>
@@ -1779,20 +1948,22 @@ function GuineaPigGame() {
         {activeTab === "friends" && (
           <div className="space-y-6">
             <div className="text-center space-y-4">
-              <h2 className="text-2xl font-bold text-white">Пригласить друзей</h2>
-              <p className="text-gray-400">Получай 10% от заработка друзей!</p>
+              <h2 className="text-2xl font-bold text-white">{t("game.invite_friends") || "Пригласить друзей"}</h2>
+              <p className="text-gray-400">{t("game.referral_bonus") || "Получай 10% от заработка друзей!"}</p>
             </div>
             <Card className="bg-gradient-to-br from-purple-900/50 to-blue-900/30 border-purple-500/30 p-6">
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white">Твоя реферальная ссылка</h3>
+                <h3 className="text-lg font-semibold text-white">
+                  {t("game.your_referral_link") || "Твоя реферальная ссылка"}
+                </h3>
                 <div className="bg-black/30 rounded-lg p-3 border border-purple-500/20">
-                  <div className="text-xs text-gray-400 mb-1">Код:</div>
+                  <div className="text-xs text-gray-400 mb-1">{t("game.code") || "Код"}</div>
                   <div className="text-lg font-mono text-purple-300">{referralCode}</div>
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={copyReferralLink} className="flex-1 bg-purple-600 hover:bg-purple-700">
                     <Copy className="w-4 h-4 mr-2" />
-                    Копировать
+                    {t("game.copy") || "Копировать"}
                   </Button>
                   <Button onClick={shareReferralLink} variant="outline" className="border-purple-500/50 bg-transparent">
                     <Share2 className="w-4 h-4" />
@@ -1804,12 +1975,12 @@ function GuineaPigGame() {
               <Card className="bg-gradient-to-br from-green-900/30 to-emerald-900/20 border-green-500/30 p-4 text-center">
                 <UserPlus className="w-8 h-8 text-green-400 mx-auto mb-2" />
                 <div className="text-2xl font-bold text-white">{friends.length}</div>
-                <div className="text-sm text-gray-400">Друзей</div>
+                <div className="text-sm text-gray-400">{t("game.friends") || "Друзей"}</div>
               </Card>
               <Card className="bg-gradient-to-br from-yellow-900/30 to-orange-900/20 border-yellow-500/30 p-4 text-center">
                 <Coins className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
                 <div className="text-2xl font-bold text-white">0</div>
-                <div className="text-sm text-gray-400">Бонус</div>
+                <div className="text-sm text-gray-400">{t("game.bonus") || "Бонус"}</div>
               </Card>
             </div>
           </div>
@@ -1818,12 +1989,16 @@ function GuineaPigGame() {
         {activeTab === "shop" && (
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold text-white">Магазин</h2>
-              <p className="text-sm text-gray-400">Покупайте GT за Telegram Stars или TON</p>
+              <h2 className="text-2xl font-bold text-white">{t("game.shop") || "Магазин"}</h2>
+              <p className="text-sm text-gray-400">
+                {t("game.buy_gt_with_stars_or_ton") || "Покупайте GT за Telegram Stars или TON"}
+              </p>
             </div>
 
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white">Покупка за Telegram Stars</h3>
+              <h3 className="text-lg font-semibold text-white">
+                {t("game.buy_with_stars") || "Покупка за Telegram Stars"}
+              </h3>
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { gt: 10, stars: 20 },
@@ -1859,19 +2034,19 @@ function GuineaPigGame() {
               </div>
 
               <div className="mt-8">
-                <h3 className="text-lg font-semibold text-white mb-4">Покупка за TON</h3>
+                <h3 className="text-lg font-semibold text-white mb-4">{t("game.buy_with_ton") || "Покупка за TON"}</h3>
 
                 {tonWallet && (
                   <Card className="bg-gradient-to-br from-blue-900/30 to-cyan-900/20 border-blue-500/30 p-4 mb-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-sm text-gray-400">Подключен кошелек</div>
+                        <div className="text-sm text-gray-400">{t("game.connected_wallet") || "Подключен кошелек"}</div>
                         <div className="text-xs font-mono text-blue-300">
                           {manualWalletAddress?.slice(0, 8)}...{manualWalletAddress?.slice(-6)}
                         </div>
                       </div>
                       <Button size="sm" onClick={disconnectTonWallet} variant="outline">
-                        Отключить
+                        {t("game.disconnect") || "Отключить"}
                       </Button>
                     </div>
                   </Card>
@@ -1888,15 +2063,19 @@ function GuineaPigGame() {
                     <div className="flex items-center gap-3">
                       <Wallet className="w-8 h-8 text-cyan-400" />
                       <div>
-                        <h4 className="font-semibold text-white">Оплата TON</h4>
-                        <p className="text-sm text-gray-400">Подключите TON кошелек и купите GT</p>
+                        <h4 className="font-semibold text-white">{t("game.ton_payment") || "Оплата TON"}</h4>
+                        <p className="text-sm text-gray-400">
+                          {t("game.connect_wallet_buy_gt") || "Подключите TON кошелек и купите GT"}
+                        </p>
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <div className="text-sm text-gray-300">Курс: 1 TON = 100 GT</div>
+                      <div className="text-sm text-gray-300">
+                        {t("game.exchange_rate", { ton: 1, gt: 100 }) || "Курс: 1 TON = 100 GT"}
+                      </div>
                       <div className="text-xs text-gray-400">
-                        Поддерживаются: Tonkeeper, Wallet, Telegram Wallet и другие
+                        {t("game.supported_wallets") || "Поддерживаются: Tonkeeper, Wallet, Telegram Wallet и другие"}
                       </div>
                     </div>
 
@@ -1922,7 +2101,7 @@ function GuineaPigGame() {
 
                     {!tonWallet && !manualWalletAddress && (
                       <div className="text-center text-sm text-gray-400 mt-2">
-                        Нажмите на любую кнопку выше чтобы подключить кошелек
+                        {t("game.click_button_to_connect") || "Нажмите на любую кнопку выше чтобы подключить кошелек"}
                       </div>
                     )}
                   </div>
@@ -1937,9 +2116,9 @@ function GuineaPigGame() {
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-bold text-white flex items-center justify-center gap-2">
                 <Crown className="w-6 h-6 text-yellow-400" />
-                Таблица лидеров
+                {t("game.leaderboard") || "Таблица лидеров"}
               </h2>
-              <p className="text-sm text-gray-400">Топ 100 игроков</p>
+              <p className="text-sm text-gray-400">{t("game.top_players", { count: 100 }) || "Топ 100 игроков"}</p>
             </div>
 
             <div className="flex gap-2 justify-center">
@@ -1953,7 +2132,7 @@ function GuineaPigGame() {
                   leaderboardPeriod === "daily" ? "bg-purple-600 hover:bg-purple-700" : "bg-gray-700 hover:bg-gray-600"
                 }
               >
-                День
+                {t("game.daily") || "День"}
               </Button>
               <Button
                 size="sm"
@@ -1965,7 +2144,7 @@ function GuineaPigGame() {
                   leaderboardPeriod === "weekly" ? "bg-purple-600 hover:bg-purple-700" : "bg-gray-700 hover:bg-gray-600"
                 }
               >
-                Неделя
+                {t("game.weekly") || "Неделя"}
               </Button>
               <Button
                 size="sm"
@@ -1979,7 +2158,7 @@ function GuineaPigGame() {
                     : "bg-gray-700 hover:bg-gray-600"
                 }
               >
-                Все время
+                {t("game.all_time") || "Все время"}
               </Button>
             </div>
 
@@ -1987,7 +2166,7 @@ function GuineaPigGame() {
               {leaderboardData[leaderboardPeriod].slice(0, 10).map((player) => (
                 <Card
                   key={player.rank}
-                  className={`p-4 ${
+                  className={
                     player.rank === 1
                       ? "bg-gradient-to-r from-yellow-900/50 to-orange-900/30 border-yellow-500/50"
                       : player.rank === 2
@@ -1995,9 +2174,9 @@ function GuineaPigGame() {
                         : player.rank === 3
                           ? "bg-gradient-to-r from-orange-900/50 to-red-900/30 border-orange-700/50"
                           : "bg-gradient-to-br from-purple-900/30 to-blue-900/20 border-purple-500/30"
-                  }`}
+                  }
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between p-4">
                     <div className="flex items-center gap-4">
                       <div
                         className={`text-2xl font-bold ${
@@ -2026,7 +2205,7 @@ function GuineaPigGame() {
 
             <div className="text-center">
               <Button variant="outline" className="border-purple-500/50 bg-transparent">
-                Показать больше
+                {t("game.show_more") || "Показать больше"}
               </Button>
             </div>
           </div>
@@ -2036,11 +2215,11 @@ function GuineaPigGame() {
           <div className="space-y-6">
             <div className="text-center space-y-4">
               <div className="text-6xl">🐹</div>
-              <h2 className="text-2xl font-bold text-white">Guinea Pig Tap Game</h2>
-              <p className="text-gray-400">Тапай, зарабатывай, развивайся!</p>
+              <h2 className="text-2xl font-bold text-white">{t("game.title") || "Guinea Pig Tap Game"}</h2>
+              <p className="text-gray-400">{t("game.tagline") || "Тапай, зарабатывай, развивайся!"}</p>
             </div>
             <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-white">Следите за нами</h3>
+              <h3 className="text-lg font-semibold text-white">{t("game.follow_us") || "Следите за нами"}</h3>
               <a
                 href="https://youtube.com/@guaniapigclicker?si=NOxj5_e-yIgerx7C"
                 target="_blank"
@@ -2053,7 +2232,7 @@ function GuineaPigGame() {
                     </div>
                     <div>
                       <h4 className="font-semibold text-white">YouTube</h4>
-                      <p className="text-sm text-gray-400">Смотрите наши видео</p>
+                      <p className="text-sm text-gray-400">{t("game.watch_videos") || "Смотрите наши видео"}</p>
                     </div>
                   </div>
                 </Card>
@@ -2066,7 +2245,7 @@ function GuineaPigGame() {
                     </div>
                     <div>
                       <h4 className="font-semibold text-white">TikTok</h4>
-                      <p className="text-sm text-gray-400">Подписывайтесь</p>
+                      <p className="text-sm text-gray-400">{t("game.follow_us") || "Подписывайтесь"}</p>
                     </div>
                   </div>
                 </Card>
@@ -2075,15 +2254,17 @@ function GuineaPigGame() {
             <Card className="bg-gradient-to-br from-pink-900/30 to-purple-900/20 border-pink-500/30 p-6 space-y-4">
               <div className="flex items-center gap-2">
                 <Heart className="w-6 h-6 text-pink-400" />
-                <h3 className="text-lg font-semibold text-white">Поддержать автора</h3>
+                <h3 className="text-lg font-semibold text-white">
+                  {t("game.support_developer") || "Поддержать автора"}
+                </h3>
               </div>
-              <p className="text-gray-300 text-sm">Помогите в развитии проекта!</p>
+              <p className="text-gray-300 text-sm">{t("game.help_project") || "Помогите в развитии проекта!"}</p>
               <Button
                 onClick={() => setShowSupportModal(true)}
                 className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700"
               >
                 <Heart className="w-4 h-4 mr-2" />
-                Поддержать за Stars
+                {t("game.support_for_stars") || "Поддержать за Stars"}
               </Button>
             </Card>
           </div>
@@ -2093,13 +2274,23 @@ function GuineaPigGame() {
       <Dialog open={showConvertModal} onOpenChange={setShowConvertModal}>
         <DialogContent className="bg-gradient-to-br from-purple-900 to-blue-900 border-purple-500/50">
           <DialogHeader>
-            <DialogTitle className="text-white">Конвертировать Carrots в GT</DialogTitle>
+            <DialogTitle className="text-white">
+              {t("game.convert_carrots_to_gt") || "Конвертировать Carrots в GT"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-center space-y-2">
-              <p className="text-gray-300">Курс: 250,000 🥕 = 1 GT</p>
-              <p className="text-sm text-gray-400">У вас: {carrots.toLocaleString()} 🥕</p>
-              <p className="text-sm text-gray-400">Получите: {Math.floor(carrots / 250000)} GT</p>
+              <p className="text-gray-300">
+                {t("game.exchange_rate", { carrots: 250000, gt: 1 }) || "Курс: 250,000 🥕 = 1 GT"}
+              </p>
+              <p className="text-sm text-gray-400">
+                {t("game.your_carrots", { carrots: carrots.toLocaleString() }) ||
+                  `У вас: ${carrots.toLocaleString()} 🥕`}
+              </p>
+              <p className="text-sm text-gray-400">
+                {t("game.you_will_get", { gt: Math.floor(carrots / 250000) }) ||
+                  `Получите: ${Math.floor(carrots / 250000)} GT`}
+              </p>
             </div>
             <div className="flex gap-2">
               <Button
@@ -2107,10 +2298,10 @@ function GuineaPigGame() {
                 disabled={carrots < 250000}
                 className="flex-1 bg-orange-600 hover:bg-orange-700"
               >
-                Конвертировать
+                {t("game.convert") || "Конвертировать"}
               </Button>
               <Button variant="outline" onClick={() => setShowConvertModal(false)}>
-                Отмена
+                {t("game.cancel") || "Отмена"}
               </Button>
             </div>
           </div>
@@ -2123,15 +2314,15 @@ function GuineaPigGame() {
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">
               <Heart className="w-5 h-5 text-pink-400" />
-              Поддержать разработчика
+              {t("game.support_developer") || "Поддержать разработчика"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-center">
               <label htmlFor="manualWalletAddress" className="block text-sm font-medium text-gray-300 mb-2">
-                Выберите сумму
+                {t("game.select_amount") || "Выберите сумму"}
               </label>
-              <div className="text-sm text-gray-400">Ваши Stars: {telegramStars} ⭐</div>
+              <div className="text-sm text-gray-400">{t("game.your_stars", { stars: telegramStars })}</div>
             </div>
             <div className="grid grid-cols-3 gap-3">
               {[1, 5, 10, 20, 50, 100].map((amount) => (
@@ -2155,13 +2346,13 @@ function GuineaPigGame() {
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">
               <Wallet className="w-5 h-5 text-cyan-400" />
-              Введите адрес TON кошелька
+              {t("game.enter_ton_wallet_address") || "Введите адрес TON кошелька"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-center">
               <label htmlFor="manualWalletAddress" className="block text-sm font-medium text-gray-300 mb-2">
-                Адрес кошелька
+                {t("game.wallet_address") || "Адрес кошелька"}
               </label>
               <input
                 id="manualWalletAddress"
@@ -2177,10 +2368,10 @@ function GuineaPigGame() {
                 onClick={() => addManualWalletAddress(manualWalletAddress)}
                 className="flex-1 bg-cyan-600 hover:bg-cyan-700"
               >
-                Добавить адрес
+                {t("game.add_address") || "Добавить адрес"}
               </Button>
               <Button variant="outline" onClick={() => setShowManualWallet(false)}>
-                Отмена
+                {t("game.cancel") || "Отмена"}
               </Button>
             </div>
           </div>
@@ -2190,12 +2381,15 @@ function GuineaPigGame() {
       <Dialog open={showCryptoPaymentModal} onOpenChange={setShowCryptoPaymentModal}>
         <DialogContent className="bg-gradient-to-br from-purple-900 to-blue-900 border-purple-500/50">
           <DialogHeader>
-            <DialogTitle className="text-white">Инструкция по оплате TON</DialogTitle>
+            <DialogTitle className="text-white">
+              {t("game.ton_payment_instructions") || "Инструкция по оплате TON"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-3 text-sm text-gray-300">
               <div>
-                <strong className="text-white">Шаг 1:</strong> Отправьте TON на адрес:
+                <strong className="text-white">{t("game.step_1") || "Шаг 1:"}</strong>{" "}
+                {t("game.send_ton_to_address") || "Отправьте TON на адрес:"}
               </div>
               <div className="bg-black/30 rounded-lg p-3 border border-green-500/20">
                 <div className="font-mono text-green-300 break-all text-xs">
@@ -2203,20 +2397,24 @@ function GuineaPigGame() {
                 </div>
               </div>
               <div>
-                <strong className="text-white">Шаг 2:</strong> После отправки, нажмите "OK" в окне оплаты.
+                <strong className="text-white">{t("game.step_2") || "Шаг 2:"}</strong>{" "}
+                {t("game.click_ok_after_sending") || "После отправки, нажмите "}
+                <span className="text-yellow-400">"OK"</span> {t("game.in_payment_window") || "в окне оплаты."}
               </div>
               <div>
-                <strong className="text-white">Шаг 3:</strong> GT будут зачислены автоматически.
+                <strong className="text-white">{t("game.step_3") || "Шаг 3:"}</strong>{" "}
+                {t("game.gt_will_be_credited") || "GT будут зачислены автоматически."}
               </div>
               <div className="text-yellow-400">
-                <strong>Курс:</strong> 1 TON = 100 GT
+                <strong>{t("game.exchange_rate_colon") || "Курс:"}</strong>{" "}
+                {t("game.exchange_rate", { ton: 1, gt: 100 }) || "1 TON = 100 GT"}
               </div>
             </div>
             <Button
               onClick={() => setShowCryptoPaymentModal(false)}
               className="w-full bg-purple-600 hover:bg-purple-700"
             >
-              Понятно
+              {t("game.understood") || "Понятно"}
             </Button>
           </div>
         </DialogContent>
@@ -2228,43 +2426,46 @@ function GuineaPigGame() {
             onClick={() => setActiveTab("main")}
             className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-all ${activeTab === "main" ? "bg-purple-600/30 text-purple-300" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
           >
-            <Home className={`w-5 h-5 ${activeTab === "main" ? "text-purple-400" : ""}`} />
-            <span className="text-[10px] font-medium leading-tight text-center">Главная</span>
+            <HomeIcon className={`w-5 h-5 ${activeTab === "main" ? "text-purple-400" : ""}`} />{" "}
+            {/* Changed from Home */}
+            <span className="text-[10px] font-medium leading-tight text-center">{t("game.main") || "Главная"}</span>
           </button>
           <button
             onClick={() => setActiveTab("upgrade")}
             className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-all ${activeTab === "upgrade" ? "bg-purple-600/30 text-purple-300" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
           >
             <Zap className={`w-5 h-5 ${activeTab === "upgrade" ? "text-purple-400" : ""}`} />
-            <span className="text-[10px] font-medium leading-tight text-center">Прокачка</span>
+            <span className="text-[10px] font-medium leading-tight text-center">
+              {t("game.upgrades") || "Прокачка"}
+            </span>
           </button>
           <button
             onClick={() => setActiveTab("mine")}
             className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-all ${activeTab === "mine" ? "bg-purple-600/30 text-purple-300" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
           >
             <Pickaxe className={`w-5 h-5 ${activeTab === "mine" ? "text-purple-400" : ""}`} />
-            <span className="text-[10px] font-medium leading-tight text-center">Майнинг</span>
+            <span className="text-[10px] font-medium leading-tight text-center">{t("game.mining") || "Майнинг"}</span>
           </button>
           <button
             onClick={() => setActiveTab("tasks")}
             className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-all ${activeTab === "tasks" ? "bg-purple-600/30 text-purple-300" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
           >
             <Trophy className={`w-5 h-5 ${activeTab === "tasks" ? "text-purple-400" : ""}`} />
-            <span className="text-[10px] font-medium leading-tight text-center">Задания</span>
+            <span className="text-[10px] font-medium leading-tight text-center">{t("game.tasks") || "Задания"}</span>
           </button>
           <button
             onClick={() => setActiveTab("friends")}
             className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-all ${activeTab === "friends" ? "bg-purple-600/30 text-purple-300" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
           >
             <Users className={`w-5 h-5 ${activeTab === "friends" ? "text-purple-400" : ""}`} />
-            <span className="text-[10px] font-medium leading-tight text-center">Друзья</span>
+            <span className="text-[10px] font-medium leading-tight text-center">{t("game.friends") || "Друзья"}</span>
           </button>
           <button
             onClick={() => setActiveTab("shop")}
             className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-all ${activeTab === "shop" ? "bg-purple-600/30 text-purple-300" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
           >
             <ShoppingCart className={`w-5 h-5 ${activeTab === "shop" ? "text-purple-400" : ""}`} />
-            <span className="text-[10px] font-medium leading-tight text-center">Магазин</span>
+            <span className="text-[10px] font-medium leading-tight text-center">{t("game.shop") || "Магазин"}</span>
           </button>
           <button
             onClick={() => {
@@ -2274,14 +2475,16 @@ function GuineaPigGame() {
             className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-all ${activeTab === "leaderboard" ? "bg-purple-600/30 text-purple-300" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
           >
             <Crown className={`w-5 h-5 ${activeTab === "leaderboard" ? "text-purple-400" : ""}`} />
-            <span className="text-[10px] font-medium leading-tight text-center">Лидеры</span>
+            <span className="text-[10px] font-medium leading-tight text-center">
+              {t("game.leaderboard") || "Лидеры"}
+            </span>
           </button>
           <button
             onClick={() => setActiveTab("about")}
             className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-all ${activeTab === "about" ? "bg-purple-600/30 text-purple-300" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
           >
             <Info className={`w-5 h-5 ${activeTab === "about" ? "text-purple-400" : ""}`} />
-            <span className="text-[10px] font-medium leading-tight text-center">О нас</span>
+            <span className="text-[10px] font-medium leading-tight text-center">{t("game.about") || "О нас"}</span>
           </button>
         </div>
       </div>
