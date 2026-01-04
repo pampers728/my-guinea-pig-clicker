@@ -19,6 +19,7 @@ import {
   Globe,
   Lock,
   ShoppingBag,
+  TrendingUp,
 } from "lucide-react"
 import { useTelegram } from "@/components/TelegramProvider"
 import { useTranslation, type Language } from "@/lib/i18n"
@@ -414,6 +415,34 @@ export default function Home() {
   const [referralBonus, setReferralBonus] = useState(0)
   const [referralsCount, setReferralsCount] = useState(0)
 
+  const exchangeCarrotsForGT = () => {
+    const rate = 100000 // 100,000 морковок = 1 GT
+    if (carrots >= rate) {
+      const gtToAdd = Math.floor(carrots / rate)
+      setCarrots((prev) => prev - gtToAdd * rate)
+      setGuineaTokens((prev) => prev + gtToAdd)
+    }
+  }
+
+  const [carrotsPerClickLevel, setCarrotsPerClickLevel] = useState(1)
+  const [maxEnergyLevel, setMaxEnergyLevel] = useState(1)
+
+  const upgradeCarrotsPerClick = () => {
+    const cost = carrotsPerClickLevel * 100
+    if (guineaTokens >= cost) {
+      setGuineaTokens((prev) => prev - cost)
+      setCarrotsPerClickLevel((prev) => prev + 1)
+    }
+  }
+
+  const upgradeMaxEnergy = () => {
+    const cost = maxEnergyLevel * 50
+    if (guineaTokens >= cost) {
+      setGuineaTokens((prev) => prev - cost)
+      setMaxEnergyLevel((prev) => prev + 1)
+    }
+  }
+
   useEffect(() => {
     const userLang = tg.user?.language_code || "en"
     const supportedLang: Language = [
@@ -446,12 +475,26 @@ export default function Home() {
     }
   }, [tg.user])
 
+  // Обновляем интервал автосохранения
   useEffect(() => {
-    const interval = setInterval(() => {
+    const saveInterval = setInterval(() => {
       savePlayerData()
-    }, 10000)
-    return () => clearInterval(interval)
-  }, [carrots, guineaTokens, level, xp, unlockedPigs, activePigId, totalClicks])
+    }, 30000) // 30 секунд
+
+    return () => clearInterval(saveInterval)
+  }, [
+    carrots,
+    guineaTokens,
+    telegramStars,
+    level,
+    xp,
+    totalClicks,
+    activePigId,
+    unlockedPigs,
+    miners,
+    carrotsPerClickLevel,
+    maxEnergyLevel,
+  ])
 
   useEffect(() => {
     if (miners.length === 0) return
@@ -518,6 +561,9 @@ export default function Home() {
         setReferralBonus(data.player.referralBonus || 0)
         setReferralsCount(data.player.referralsCount || 0)
         setMiners(data.player.miners || initializeMiners())
+        // Загружаем апгрейды
+        setCarrotsPerClickLevel(data.player.carrotsPerClickLevel || 1)
+        setMaxEnergyLevel(data.player.maxEnergyLevel || 1)
       }
     } catch (error) {
       console.error("[v0] Failed to load player data:", error)
@@ -537,7 +583,7 @@ export default function Home() {
         body: JSON.stringify({
           userId: tg.user.id,
           username: tg.user.username,
-          score: carrots,
+          carrots,
           guineaTokens,
           telegramStars,
           level,
@@ -546,8 +592,12 @@ export default function Home() {
           activePigId,
           pigs: unlockedPigs.map((id) => ({ id, rarity: getPigById(id)?.rarity })),
           miners,
+          // Сохраняем апгрейды
+          carrotsPerClickLevel,
+          maxEnergyLevel,
         }),
       })
+      console.log("[v0] Player data saved successfully")
     } catch (error) {
       console.error("[v0] Failed to save player data:", error)
     } finally {
@@ -571,7 +621,8 @@ export default function Home() {
   const handleGuineaPigClick = () => {
     const clickCost = 1
     if (energy >= clickCost) {
-      const carrotsGained = getCurrentCarrotsPerClick(level)
+      // Используем обновленную функцию получения морковок за клик
+      const carrotsGained = getCurrentCarrotsPerClick(level) * carrotsPerClickLevel
       setCarrots((prev) => prev + carrotsGained)
       setEnergy((prev) => prev - clickCost)
       setTotalClicks((prev) => prev + 1)
@@ -742,6 +793,8 @@ export default function Home() {
   const activePig = getPigById(activePigId)
   const totalIncome = calculateTotalIncome()
   const xpNeeded = calculateXPNeeded(level)
+  const maxEnergy = getCurrentMaxEnergy(level) + maxEnergyLevel * 100
+  const carrotsPerClick = getCurrentCarrotsPerClick(level) * carrotsPerClickLevel
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white pb-20 safe-area-inset">
@@ -814,28 +867,31 @@ export default function Home() {
                 </Card>
               )}
 
-              <div
-                className="w-48 h-48 sm:w-64 sm:h-64 mx-auto rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center cursor-pointer transform transition-transform active:scale-95 shadow-2xl"
+              <button
                 onClick={handleGuineaPigClick}
+                disabled={energy < carrotsPerClick}
+                className="w-full max-w-[280px] sm:max-w-xs aspect-square rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed shadow-2xl mx-auto"
               >
-                <img
-                  src={activePig?.icon || "/placeholder.svg"}
-                  alt={activePig?.name[language] || "Guinea Pig"}
-                  className="w-40 h-40 sm:w-56 sm:h-56 rounded-full object-cover"
-                />
-              </div>
+                {activePig && (
+                  <img
+                    src={activePig.icon || "/placeholder.svg"}
+                    alt={activePig.name[language]}
+                    className="w-3/4 h-3/4 object-contain"
+                  />
+                )}
+              </button>
 
               <div className="flex items-center justify-between bg-black/30 rounded-full p-2">
                 <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
                 <div className="flex-1 mx-2 sm:mx-3">
-                  <Progress value={(energy / getCurrentMaxEnergy(level)) * 100} className="h-2" />
+                  <Progress value={(energy / maxEnergy) * 100} className="h-2" />
                 </div>
                 <span className="text-xs sm:text-sm font-medium">
-                  {energy}/{getCurrentMaxEnergy(level)}
+                  {energy}/{maxEnergy}
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-gray-400">
-                {t("game.tap_power")} = {getCurrentCarrotsPerClick(level)} 🥕
+                {t("game.tap_power")} = {carrotsPerClick} 🥕
               </p>
             </div>
           </div>
@@ -1053,63 +1109,130 @@ export default function Home() {
             </div>
           </div>
         )}
+
+        {activeTab === "upgrades" && (
+          <div className="space-y-4">
+            <h2 className="text-xl sm:text-2xl font-bold text-white text-center">{t("tab.upgrades")}</h2>
+
+            <Card className="bg-gradient-to-br from-purple-900/30 to-blue-900/20 border-purple-500/30 p-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-white">{t("upgrade.carrots_per_click")}</h3>
+                    <p className="text-xs text-gray-400">
+                      {t("upgrade.current")}: {carrotsPerClick}
+                    </p>
+                  </div>
+                  <Button
+                    onClick={upgradeCarrotsPerClick}
+                    disabled={guineaTokens < carrotsPerClickLevel * 100}
+                    className="bg-yellow-600 hover:bg-yellow-700"
+                  >
+                    {carrotsPerClickLevel * 100} GT
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-purple-900/30 to-blue-900/20 border-purple-500/30 p-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-white">{t("upgrade.max_energy")}</h3>
+                    <p className="text-xs text-gray-400">
+                      {t("upgrade.current")}: {maxEnergy}
+                    </p>
+                  </div>
+                  <Button
+                    onClick={upgradeMaxEnergy}
+                    disabled={guineaTokens < maxEnergyLevel * 50}
+                    className="bg-yellow-600 hover:bg-yellow-700"
+                  >
+                    {maxEnergyLevel * 50} GT
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-orange-900/30 to-red-900/20 border-orange-500/30 p-4">
+              <div className="space-y-3">
+                <h3 className="font-semibold text-white text-center">{t("exchange.title")}</h3>
+                <p className="text-sm text-gray-300 text-center">{t("exchange.rate")}: 100,000 🥕 = 1 GT</p>
+                <Button
+                  onClick={exchangeCarrotsForGT}
+                  disabled={carrots < 100000}
+                  className="w-full bg-gradient-to-r from-orange-600 to-yellow-600 hover:from-orange-700 hover:to-yellow-700"
+                >
+                  {t("exchange.button")} ({Math.floor(carrots / 100000)} GT)
+                </Button>
+              </div>
+            </Card>
+          </div>
+        )}
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 bg-black/40 backdrop-blur-md border-t border-purple-500/30 safe-area-inset-bottom">
-        <div className="container mx-auto grid grid-cols-5 gap-1 p-2">
-          <Button
-            variant="ghost"
+        <div className="grid grid-cols-7 gap-1 sm:gap-2 bg-gray-900/50 backdrop-blur-sm p-2 rounded-t-2xl">
+          <button
             onClick={() => setActiveTab("main")}
-            className={`flex flex-col items-center gap-1 h-auto py-2 ${
-              activeTab === "main" ? "text-purple-400" : "text-gray-400"
+            className={`flex flex-col items-center gap-0.5 sm:gap-1 p-1.5 sm:p-2 rounded-lg transition-colors text-[10px] sm:text-xs ${
+              activeTab === "main" ? "bg-purple-600 text-white" : "text-gray-400 hover:text-white"
             }`}
           >
-            <HomeIcon className="w-5 h-5" />
-            <span className="text-[10px]">{t("tab.main")}</span>
-          </Button>
-          <Button
-            variant="ghost"
+            <HomeIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">{t("tab.main")}</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab("miners")}
-            className={`flex flex-col items-center gap-1 h-auto py-2 ${
-              activeTab === "miners" ? "text-purple-400" : "text-gray-400"
+            className={`flex flex-col items-center gap-0.5 sm:gap-1 p-1.5 sm:p-2 rounded-lg transition-colors text-[10px] sm:text-xs ${
+              activeTab === "miners" ? "bg-purple-600 text-white" : "text-gray-400 hover:text-white"
             }`}
           >
-            <Pickaxe className="w-5 h-5" />
-            <span className="text-[10px]">{t("tab.miners")}</span>
-          </Button>
-          <Button
-            variant="ghost"
+            <Pickaxe className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">{t("tab.miners")}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("upgrades")}
+            className={`flex flex-col items-center gap-0.5 sm:gap-1 p-1.5 sm:p-2 rounded-lg transition-colors text-[10px] sm:text-xs ${
+              activeTab === "upgrades" ? "bg-purple-600 text-white" : "text-gray-400 hover:text-white"
+            }`}
+          >
+            <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">{t("tab.upgrades")}</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab("friends")}
-            className={`flex flex-col items-center gap-1 h-auto py-2 ${
-              activeTab === "friends" ? "text-purple-400" : "text-gray-400"
+            className={`flex flex-col items-center gap-0.5 sm:gap-1 p-1.5 sm:p-2 rounded-lg transition-colors text-[10px] sm:text-xs ${
+              activeTab === "friends" ? "bg-purple-600 text-white" : "text-gray-400 hover:text-white"
             }`}
           >
-            <Users className="w-5 h-5" />
-            <span className="text-[10px]">{t("tab.friends")}</span>
-          </Button>
-          <Button
-            variant="ghost"
+            <Users className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">{t("tab.friends")}</span>
+          </button>
+          <button
             onClick={() => setActiveTab("shop")}
-            className={`flex flex-col items-center gap-1 h-auto py-2 ${
-              activeTab === "shop" ? "text-purple-400" : "text-gray-400"
+            className={`flex flex-col items-center gap-0.5 sm:gap-1 p-1.5 sm:p-2 rounded-lg transition-colors text-[10px] sm:text-xs ${
+              activeTab === "shop" ? "bg-purple-600 text-white" : "text-gray-400 hover:text-white"
             }`}
           >
-            <ShoppingBag className="w-5 h-5" />
-            <span className="text-[10px]">{t("tab.shop")}</span>
-          </Button>
-          <Button
-            variant="ghost"
+            <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">{t("tab.shop")}</span>
+          </button>
+          <button
             onClick={() => {
               setActiveTab("leaderboard")
               loadLeaderboard(leaderboardPeriod)
             }}
-            className={`flex flex-col items-center gap-1 h-auto py-2 ${
-              activeTab === "leaderboard" ? "text-purple-400" : "text-gray-400"
+            className={`flex flex-col items-center gap-0.5 sm:gap-1 p-1.5 sm:p-2 rounded-lg transition-colors text-[10px] sm:text-xs ${
+              activeTab === "leaderboard" ? "bg-purple-600 text-white" : "text-gray-400 hover:text-white"
             }`}
           >
-            <Crown className="w-5 h-5" />
-            <span className="text-[10px]">{t("tab.leaderboard")}</span>
-          </Button>
+            <Crown className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">{t("tab.leaderboard")}</span>
+          </button>
         </div>
       </div>
 

@@ -21,6 +21,17 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "Friends",
     "tab.shop": "Shop",
     "tab.leaderboard": "Leaderboard",
+    "tab.upgrades": "Upgrades",
+
+    // Upgrades
+    "upgrade.carrots_per_click": "Carrots per Click",
+    "upgrade.max_energy": "Max Energy",
+    "upgrade.current": "Current",
+
+    // Exchange
+    "exchange.title": "Exchange Carrots for GT",
+    "exchange.rate": "Rate",
+    "exchange.button": "Exchange",
 
     // Shop
     "shop.buyGT": "Buy GT",
@@ -53,6 +64,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "level.current": "Level",
     "level.xp": "XP",
     "level.next": "Next level",
+    "level.reward": "Level reward",
 
     // Pigs
     "pigs.collection": "Guinea Pig Collection",
@@ -78,6 +90,15 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "Друзья",
     "tab.shop": "Магазин",
     "tab.leaderboard": "Лидеры",
+    "tab.upgrades": "Апгрейды",
+
+    "upgrade.carrots_per_click": "Морковок за клик",
+    "upgrade.max_energy": "Максимум энергии",
+    "upgrade.current": "Текущий",
+
+    "exchange.title": "Обмен морковок на GT",
+    "exchange.rate": "Курс",
+    "exchange.button": "Обменять",
 
     "shop.buyGT": "Купить GT",
     "shop.buyForStars": "Купить за Stars",
@@ -106,6 +127,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "level.current": "Уровень",
     "level.xp": "Опыт",
     "level.next": "Следующий уровень",
+    "level.reward": "Награда за уровень",
 
     "pigs.collection": "Коллекция морских свинок",
 
@@ -129,6 +151,15 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "Друзі",
     "tab.shop": "Магазин",
     "tab.leaderboard": "Лідери",
+    "tab.upgrades": "Поліпшення",
+
+    "upgrade.carrots_per_click": "Морквинок за клік",
+    "upgrade.max_energy": "Максимум енергії",
+    "upgrade.current": "Поточний",
+
+    "exchange.title": "Обмін морквинок на GT",
+    "exchange.rate": "Курс",
+    "exchange.button": "Обміняти",
 
     "shop.buyGT": "Купити GT",
     "shop.buyForStars": "Купити за Stars",
@@ -157,6 +188,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "level.current": "Рівень",
     "level.xp": "Досвід",
     "level.next": "Наступний рівень",
+    "level.reward": "Нагорода за рівень",
 
     "pigs.collection": "Колекція морських свинок",
 
@@ -180,6 +212,15 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "Достар",
     "tab.shop": "Дүкен",
     "tab.leaderboard": "Көшбасшылар",
+    "tab.upgrades": "Жаңартуылар",
+
+    "upgrade.carrots_per_click": "Тапта сәбіз",
+    "upgrade.max_energy": "Максималды энергия",
+    "upgrade.current": "Ағымдағы",
+
+    "exchange.title": "Сәбіздерді GT үшін ауыстыру",
+    "exchange.rate": "Курас",
+    "exchange.button": "Ауыстыру",
 
     "shop.buyGT": "GT қосу",
     "shop.buyForStars": "Stars үшін қосу",
@@ -202,6 +243,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "level.current": "Көрсетім",
     "level.xp": "Опыт",
     "level.next": "Келесі көрсетім",
+    "level.reward": "Көрсетім бағыты",
 
     "pigs.collection": "Теңіз шошқасы топоры",
 
@@ -225,6 +267,15 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "Amigos",
     "tab.shop": "Loja",
     "tab.leaderboard": "Classificação",
+    "tab.upgrades": "Atualizações",
+
+    "upgrade.carrots_per_click": "Cenouras por Toque",
+    "upgrade.max_energy": "Energia Máxima",
+    "upgrade.current": "Atual",
+
+    "exchange.title": "Trocar Cenouras por GT",
+    "exchange.rate": "Taxa",
+    "exchange.button": "Trocar",
 
     "shop.buyGT": "Comprar GT",
     "shop.buyForStars": "Comprar por Stars",
@@ -248,6 +299,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "level.current": "Nível",
     "level.xp": "Experiência",
     "level.next": "Próximo nível",
+    "level.reward": "Recompensa por nível",
 
     "pigs.collection": "Coleção de Porquinhos-da-Índia",
 
@@ -271,6 +323,15 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "Сябры",
     "tab.shop": "Магазін",
     "tab.leaderboard": "Лідары",
+    "tab.upgrades": "Апгрейды",
+
+    "upgrade.carrots_per_click": "Маркоўкаў на клік",
+    "upgrade.max_energy": "Максімалная энергія",
+    "upgrade.current": "Падобны",
+
+    "exchange.title": "Замяніце маркоўкі на GT",
+    "exchange.rate": "Курас",
+    "exchange.button": "Замяніце",
 
     "shop.buyGT": "Купіце GT",
     "shop.buyForStars": "Купіце за Stars",
@@ -294,6 +355,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "level.current": "Рэвель",
     "level.xp": "Эксперынс",
     "level.next": "Наступны рэвель",
+    "level.reward": "Награда за рэвель",
 
     "pigs.collection": "Коллекцыя марскіх свінок",
 
@@ -317,6 +379,15 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "Amigos",
     "tab.shop": "Tienda",
     "tab.leaderboard": "Clasificación",
+    "tab.upgrades": "Actualizaciones",
+
+    "upgrade.carrots_per_click": "Zanahorias por Toque",
+    "upgrade.max_energy": "Energía Máxima",
+    "upgrade.current": "Actual",
+
+    "exchange.title": "Intercambiar Zanahorias por GT",
+    "exchange.rate": "Tasa",
+    "exchange.button": "Intercambiar",
 
     "shop.buyGT": "Comprar GT",
     "shop.buyForStars": "Comprar por Stars",
@@ -340,6 +411,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "level.current": "Nivel",
     "level.xp": "Experiencia",
     "level.next": "Siguiente nivel",
+    "level.reward": "Recompensa por nivel",
 
     "pigs.collection": "Colección de Conejos de Guinea",
 
@@ -363,6 +435,15 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "Freunde",
     "tab.shop": "Geschäft",
     "tab.leaderboard": "Bestenliste",
+    "tab.upgrades": "Upgrades",
+
+    "upgrade.carrots_per_click": "Karotten pro Klick",
+    "upgrade.max_energy": "Maximale Energie",
+    "upgrade.current": "Aktuell",
+
+    "exchange.title": "Karotten gegen GT tauschen",
+    "exchange.rate": "Kurs",
+    "exchange.button": "Tauschen",
 
     "shop.buyGT": "GT kaufen",
     "shop.buyForStars": "Kaufen Sie für Stars",
@@ -386,6 +467,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "level.current": "Level",
     "level.xp": "Erfahrung",
     "level.next": "Nächster Level",
+    "level.reward": "Levelrecompense",
 
     "pigs.collection": "Meerschweinchen-Sammlung",
 
@@ -402,13 +484,54 @@ export const translations: Record<Language, Record<string, string>> = {
     "game.passive_income": "Dochód pasywny",
     "game.referral_bonus": "bonusz za zaproszenie",
     "game.tap_power": "Moc stuknięcia",
+
+    "tab.main": "Główna",
+    "tab.miners": "Kopalni",
+    "tab.tasks": "Zadania",
+    "tab.friends": "Znajomi",
+    "tab.shop": "Sklep",
+    "tab.leaderboard": "Tablica wyników",
+    "tab.upgrades": "Ulepszenia",
+
+    "upgrade.carrots_per_click": "Marchewek na kliknięcie",
+    "upgrade.max_energy": "Maksymalna energia",
+    "upgrade.current": "Aktualny",
+
+    "exchange.title": "Zamień Marchewki na GT",
+    "exchange.rate": "Kurs",
+    "exchange.button": "Zamień",
+
+    "shop.buyGT": "Kupuj GT",
+    "shop.buyForStars": "Kupuj za Stars",
+    "shop.popular": "Popularne",
     "shop.buy_gt_description": "Kupuj GT za Telegram Stars",
     "shop.buy_for_stars": "Kupuj za Telegram Stars",
     "shop.check_bot_message": "Sprawdź swojego bota Telegrama dla płatności",
     "shop.purchase_success": "Zakup udany! Otrzymałeś",
     "shop.purchase_error": "Zakup nieudany. Spróbuj ponownie.",
+
+    "friends.title": "Zaproś znajomych",
+    "friends.description": "Zdobądź 10% zysków swoich znajomych!",
+    "friends.link": "Twój link zaproszeniowy",
+    "friends.copy": "Skopiuj",
+    "friends.share": "Podziel się",
+    "friends.count": "Znajomi",
+    "friends.bonus": "Bonus",
     "friends.link_copied": "Link zaproszeniowy skopiowany!",
+
+    "leaderboard.title": "Tablica wyników",
+    "leaderboard.top100": "Top 100 graczy",
+    "leaderboard.daily": "Dzień",
+    "leaderboard.weekly": "Tydzień",
+    "leaderboard.alltime": "Cały czas",
+
+    "level.current": "Poziom",
+    "level.xp": "Doświadczenie",
+    "level.next": "Następny poziom",
+    "level.reward": "Nagroda za poziom",
+
     "pigs.collection": "Kolekcja śwink morskich",
+
     "settings.language": "Wybierz język",
   },
   fr: {
@@ -429,6 +552,15 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "Amis",
     "tab.shop": "Magasin",
     "tab.leaderboard": "Classement",
+    "tab.upgrades": "Mises à niveau",
+
+    "upgrade.carrots_per_click": "Carottes par clic",
+    "upgrade.max_energy": "Énergie maximale",
+    "upgrade.current": "Actuel",
+
+    "exchange.title": "Échanger des carottes contre GT",
+    "exchange.rate": "Taux",
+    "exchange.button": "Échanger",
 
     "shop.buyGT": "Acheter GT",
     "shop.buyForStars": "Acheter pour Stars",
@@ -452,6 +584,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "level.current": "Niveau",
     "level.xp": "Expérience",
     "level.next": "Prochain niveau",
+    "level.reward": "Récompense de niveau",
 
     "pigs.collection": "Collection de Cochons d'Inde",
 
@@ -475,6 +608,15 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "朋友",
     "tab.shop": "商店",
     "tab.leaderboard": "排行榜",
+    "tab.upgrades": "升级",
+
+    "upgrade.carrots_per_click": "每次点击的胡萝卜",
+    "upgrade.max_energy": "最大能量",
+    "upgrade.current": "当前",
+
+    "exchange.title": "用胡萝卜兑换GT",
+    "exchange.rate": "汇率",
+    "exchange.button": "兑换",
 
     "shop.buyGT": "购买GT",
     "shop.buyForStars": "用Stars购买",
@@ -498,6 +640,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "level.current": "等级",
     "level.xp": "经验",
     "level.next": "下一个等级",
+    "level.reward": "等级奖励",
 
     "pigs.collection": "豚鼠收藏",
 
@@ -521,6 +664,15 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "友達",
     "tab.shop": "ショップ",
     "tab.leaderboard": "リーダーボード",
+    "tab.upgrades": "アップグレード",
+
+    "upgrade.carrots_per_click": "タップあたりのニンジン",
+    "upgrade.max_energy": "最大エネルギー",
+    "upgrade.current": "現在",
+
+    "exchange.title": "ニンジンをGTに交換",
+    "exchange.rate": "レート",
+    "exchange.button": "交換",
 
     "shop.buyGT": "GTを購入",
     "shop.buyForStars": "Starsで購入",
@@ -544,6 +696,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "level.current": "レベル",
     "level.xp": "経験",
     "level.next": "次のレベル",
+    "level.reward": "レベル報酬",
 
     "pigs.collection": "モルモットコレクション",
 
@@ -567,6 +720,15 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "친구",
     "tab.shop": "상점",
     "tab.leaderboard": "순위표",
+    "tab.upgrades": "업그레이드",
+
+    "upgrade.carrots_per_click": "클릭당 당근",
+    "upgrade.max_energy": "최대 에너지",
+    "upgrade.current": "현재",
+
+    "exchange.title": "당근을 GT로 교환",
+    "exchange.rate": "환율",
+    "exchange.button": "교환",
 
     "shop.buyGT": "GT 구매",
     "shop.buyForStars": "Stars로 구매",
@@ -590,6 +752,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "level.current": "레벨",
     "level.xp": "경험",
     "level.next": "다음 레벨",
+    "level.reward": "레벨 보상",
 
     "pigs.collection": "기니피그 컬렉션",
 
@@ -613,6 +776,15 @@ export const translations: Record<Language, Record<string, string>> = {
     "tab.friends": "Arkadaşlar",
     "tab.shop": "Mağaza",
     "tab.leaderboard": "Sıralama",
+    "tab.upgrades": "Yükseltmeler",
+
+    "upgrade.carrots_per_click": "Tıklama başına havuç",
+    "upgrade.max_energy": "Maksimum enerji",
+    "upgrade.current": "Şimdiki",
+
+    "exchange.title": "Havuçları GT için Değiştir",
+    "exchange.rate": "Oran",
+    "exchange.button": "Değiştir",
 
     "shop.buyGT": "GT Satın Al",
     "shop.buyForStars": "Stars için Satın Al",
@@ -636,6 +808,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "level.current": "Seviye",
     "level.xp": "Deneyim",
     "level.next": "Sonraki seviye",
+    "level.reward": "Seviye ödülleri",
 
     "pigs.collection": "Kobay Toplaması",
 
@@ -643,10 +816,10 @@ export const translations: Record<Language, Record<string, string>> = {
   },
 }
 
-export function useTranslation(language: Language = "en") {
-  const t = (key: string): string => {
-    return translations[language]?.[key] || translations.en[key] || key
+export function useTranslation(lang: Language) {
+  return {
+    t: (key: string): string => {
+      return translations[lang]?.[key] || translations.en[key] || key
+    },
   }
-
-  return { t }
 }

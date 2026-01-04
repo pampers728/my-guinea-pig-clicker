@@ -8,7 +8,19 @@ function calculateXPNeeded(level: number): number {
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json()
-    const { userId, score, carrots, guineaTokens, totalClicks, miners, taskProgress, xp: currentXP } = data
+    const {
+      userId,
+      carrots,
+      guineaTokens,
+      telegramStars,
+      totalClicks,
+      miners,
+      xp: currentXP,
+      activePigId,
+      pigs,
+      carrotsPerClickLevel,
+      maxEnergyLevel,
+    } = data
 
     if (!userId) {
       return NextResponse.json({ error: "userId required" }, { status: 400 })
@@ -32,14 +44,18 @@ export async function POST(req: NextRequest) {
     }
 
     const updateData = {
-      score: score || guineaTokens || 0,
+      score: carrots || 0,
       xp,
       level,
       carrots: carrots || 0,
       guineaTokens: guineaTokens || 0,
+      telegramStars: telegramStars || 0,
       totalClicks: totalClicks || 0,
       miners: miners || [],
-      taskProgress: taskProgress || {},
+      activePigId: activePigId || "white_basic",
+      pigs: pigs || [],
+      carrotsPerClickLevel: carrotsPerClickLevel || 1,
+      maxEnergyLevel: maxEnergyLevel || 1,
       updatedAt: new Date(),
     }
 
