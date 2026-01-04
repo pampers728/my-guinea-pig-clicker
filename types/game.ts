@@ -27,6 +27,10 @@ export interface PlayerData {
   referralsCount: number
   miners: any[]
   taskProgress: any
+  agreedToTerms: boolean
+  lastOnline?: Date
+  carrotsPerClickLevel: number
+  maxEnergyLevel: number
   createdAt: Date
   updatedAt: Date
 }
