@@ -9,8 +9,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "userId required" }, { status: 400 })
     }
 
+    // If MongoDB is not configured, return default player data
     if (!clientPromise) {
-      return NextResponse.json({ error: "Database not configured" }, { status: 503 })
+      console.log("[v0] MongoDB not configured, returning default player data")
+      return NextResponse.json({
+        userId,
+        username: username || "Player",
+        score: 0,
+        xp: 0,
+        level: 1,
+        carrots: 0,
+        guineaTokens: 0,
+        telegramStars: 0,
+        totalClicks: 0,
+        activePigId: "white_basic",
+        pigs: [
+          {
+            id: "white_basic",
+            rarity: "COMMON",
+          },
+        ],
+        referralBonus: 0,
+        referralsCount: 0,
+        miners: [],
+        carrotsPerClickLevel: 1,
+        maxEnergyLevel: 1,
+        taskProgress: {},
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
     }
 
     const client = await clientPromise
@@ -54,6 +81,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result)
   } catch (error) {
     console.error("[v0] Error loading player:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    // Return default player data on MongoDB error
+    return NextResponse.json({
+      userId: (await req.json()).userId,
+      username: (await req.json()).username || "Player",
+      score: 0,
+      xp: 0,
+      level: 1,
+      carrots: 0,
+      guineaTokens: 0,
+      telegramStars: 0,
+      totalClicks: 0,
+      activePigId: "white_basic",
+      pigs: [
+        {
+          id: "white_basic",
+          rarity: "COMMON",
+        },
+      ],
+      referralBonus: 0,
+      referralsCount: 0,
+      miners: [],
+      carrotsPerClickLevel: 1,
+      maxEnergyLevel: 1,
+      taskProgress: {},
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
   }
 }
