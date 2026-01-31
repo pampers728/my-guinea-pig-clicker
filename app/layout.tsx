@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import Script from "next/script"
+import { TelegramProvider } from "@/components/TelegramProvider"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -42,7 +43,9 @@ export default function RootLayout({
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
       </head>
       <body className={`font-sans antialiased`}>
-        {children}
+        <TelegramProvider>
+          {children}
+        </TelegramProvider>
         <Analytics />
       </body>
     </html>

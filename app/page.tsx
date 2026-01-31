@@ -20,7 +20,6 @@ import {
   Lock,
   ShoppingBag,
   TrendingUp,
-  Info,
 } from "lucide-react"
 import { useTelegram } from "@/components/TelegramProvider"
 import { useTranslation, type Language } from "@/lib/i18n"
@@ -34,8 +33,7 @@ import {
 } from "@/lib/pigs"
 // Dynamically import TonConnect to avoid SSR issues and potential runtime errors
 const TonConnectModule: any = null
-
-import { TermsModal } from "@/components/TermsModal"
+// </CHANGE> Removed direct import and dynamic import from here
 
 interface TaskReward {
   carrots: number
@@ -417,133 +415,35 @@ export default function Home() {
   const [referralBonus, setReferralBonus] = useState(0)
   const [referralsCount, setReferralsCount] = useState(0)
 
-  const [agreedToTerms, setAgreedToTerms] = useState(false)
-  const [showTermsModal, setShowTermsModal] = useState(false)
-
-  // These states are updated by the upgrade functions, so they should be initialized here or within those functions.
-  // For now, initializing them to default values and letting the upgrade functions manage them.
-  const [carrotsPerClick, setCarrotsPerClick] = useState(10) // Default initial value, will be updated by level/upgrade logic
-  const [maxEnergy, setMaxEnergy] = useState(1000) // Default initial value, will be updated by level/upgrade logic
-
-  const [carrotsPerClickLevel, setCarrotsPerClickLevel] = useState(1)
-  const [maxEnergyLevel, setMaxEnergyLevel] = useState(1)
-
   const exchangeCarrotsForGT = () => {
     const rate = 100000 // 100,000 морковок = 1 GT
     if (carrots >= rate) {
       const gtToAdd = Math.floor(carrots / rate)
       setCarrots((prev) => prev - gtToAdd * rate)
       setGuineaTokens((prev) => prev + gtToAdd)
-      savePlayerData() // Save after conversion
     }
   }
 
+  const [carrotsPerClickLevel, setCarrotsPerClickLevel] = useState(1)
+  const [maxEnergyLevel, setMaxEnergyLevel] = useState(1)
+
   const upgradeCarrotsPerClick = () => {
-    // Уровни 1-7 стоят морковки (1000, 2000, 4000, 8000, 16000, 32000, 64000)
-    // Уровни 8-10 стоят GT (5, 10, 15, 20)
-    const level = carrotsPerClickLevel + 1
-
-    let cost = 0
-    let currency: "carrots" | "gt" = "carrots"
-
-    if (level <= 7) {
-      cost = 1000 * Math.pow(2, level - 1)
-      currency = "carrots"
-    } else if (level === 8) {
-      cost = 5
-      currency = "gt"
-    } else if (level === 9) {
-      cost = 10
-      currency = "gt"
-    } else if (level === 10) {
-      cost = 15
-      currency = "gt"
-    } else if (level === 11) {
-      cost = 20
-      currency = "gt"
-    } else {
-      return // Max level
-    }
-
-    if (currency === "carrots" && carrots >= cost) {
-      setCarrots((prev) => prev - cost)
-      setCarrotsPerClickLevel(level)
-      setCarrotsPerClick(getCurrentCarrotsPerClick(level) * level) // Update the displayed carrotsPerClick
-      savePlayerData()
-    } else if (currency === "gt" && guineaTokens >= cost) {
+    const cost = carrotsPerClickLevel * 100
+    if (guineaTokens >= cost) {
       setGuineaTokens((prev) => prev - cost)
-      setCarrotsPerClickLevel(level)
-      setCarrotsPerClick(getCurrentCarrotsPerClick(level) * level) // Update the displayed carrotsPerClick
-      savePlayerData()
+      setCarrotsPerClickLevel((prev) => prev + 1)
     }
   }
 
   const upgradeMaxEnergy = () => {
-    // Уровни 1-7 стоят морковки (1000, 2000, 4000, 8000, 16000, 32000, 64000)
-    // Уровни 8-10 стоят GT (5, 10, 15, 20)
-    const level = maxEnergyLevel + 1
-
-    let cost = 0
-    let currency: "carrots" | "gt" = "carrots"
-
-    if (level <= 7) {
-      cost = 1000 * Math.pow(2, level - 1)
-      currency = "carrots"
-    } else if (level === 8) {
-      cost = 5
-      currency = "gt"
-    } else if (level === 9) {
-      cost = 10
-      currency = "gt"
-    } else if (level === 10) {
-      cost = 15
-      currency = "gt"
-    } else if (level === 11) {
-      cost = 20
-      currency = "gt"
-    } else {
-      return // Max level
-    }
-
-    if (currency === "carrots" && carrots >= cost) {
-      setCarrots((prev) => prev - cost)
-      setMaxEnergyLevel(level)
-      setMaxEnergy(1000 + level * 1000) // Update the displayed maxEnergy
-      savePlayerData()
-    } else if (currency === "gt" && guineaTokens >= cost) {
+    const cost = maxEnergyLevel * 50
+    if (guineaTokens >= cost) {
       setGuineaTokens((prev) => prev - cost)
-      setMaxEnergyLevel(level)
-      setMaxEnergy(1000 + level * 1000) // Update the displayed maxEnergy
-      savePlayerData()
+      setMaxEnergyLevel((prev) => prev + 1)
     }
-  }
-
-  const handleAcceptTerms = () => {
-    setAgreedToTerms(true)
-    setShowTermsModal(false)
-    const userId = tg.user?.id || Date.now()
-    localStorage.setItem(`agreedToTerms_${userId}`, "true")
   }
 
   useEffect(() => {
-    if (!tg.isAvailable) return
-
-    const userId = tg.user?.id || 0
-    if (!userId) return
-
-    console.log("[v0] Initializing game for user:", userId)
-
-    // Проверяем согласие с условиями
-    const termsKey = `agreedToTerms_${userId}`
-    const hasAgreed = localStorage.getItem(termsKey) === "true"
-    setAgreedToTerms(hasAgreed)
-
-    if (!hasAgreed) {
-      setShowTermsModal(true)
-      setIsLoading(false)
-      return
-    }
-
     const userLang = tg.user?.language_code || "en"
     const supportedLang: Language = [
       "en",
@@ -565,15 +465,15 @@ export default function Home() {
       : "en"
     setLanguage(supportedLang)
 
-    const userIdForReferral = tg.user?.id || Date.now()
-    setReferralLink(`https://t.me/GuineaPigClicker_bot?start=${userIdForReferral}`)
+    const userId = tg.user?.id || Date.now()
+    setReferralLink(`https://t.me/GuineaPigClicker_bot?start=${userId}`)
 
     loadPlayerData()
     const startParam = tg.initDataUnsafe?.start_parameter
     if (startParam) {
       handleReferral(Number.parseInt(startParam))
     }
-  }, [tg.isAvailable]) // Dependency on tg.isAvailable added
+  }, [tg.user])
 
   // Обновляем интервал автосохранения
   useEffect(() => {
@@ -609,14 +509,14 @@ export default function Home() {
   }, [miners])
 
   useEffect(() => {
-    const maxEnergyCalculated = getCurrentMaxEnergy(level) + maxEnergyLevel * 1000 // Using the upgraded maxEnergy value
-    if (energy < maxEnergyCalculated) {
+    const maxEnergy = getCurrentMaxEnergy(level)
+    if (energy < maxEnergy) {
       const interval = setInterval(() => {
-        setEnergy((prev) => Math.min(prev + 1, maxEnergyCalculated))
+        setEnergy((prev) => Math.min(prev + 1, maxEnergy))
       }, 1000)
       return () => clearInterval(interval)
     }
-  }, [energy, level, maxEnergyLevel]) // Dependency on maxEnergyLevel added
+  }, [energy, level])
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -664,9 +564,6 @@ export default function Home() {
         // Загружаем апгрейды
         setCarrotsPerClickLevel(data.player.carrotsPerClickLevel || 1)
         setMaxEnergyLevel(data.player.maxEnergyLevel || 1)
-        // Update displayed values after loading levels
-        setCarrotsPerClick(getCurrentCarrotsPerClick(level) * (data.player.carrotsPerClickLevel || 1))
-        setMaxEnergy(1000 + (data.player.maxEnergyLevel || 1) * 1000)
       }
     } catch (error) {
       console.error("[v0] Failed to load player data:", error)
@@ -732,7 +629,6 @@ export default function Home() {
 
       const xpGained = 1
       checkLevelUp(xpGained)
-      savePlayerData() // Save after click
     }
   }
 
@@ -755,9 +651,6 @@ export default function Home() {
 
     setXP(newXP)
     setLevel(newLevel)
-    // Recalculate carrotsPerClick and maxEnergy based on new level
-    setCarrotsPerClick(getCurrentCarrotsPerClick(newLevel) * carrotsPerClickLevel)
-    setMaxEnergy(getCurrentMaxEnergy(newLevel) + maxEnergyLevel * 1000)
   }
 
   const unlockPig = (pigId: string) => {
@@ -773,11 +666,11 @@ export default function Home() {
       icon: "👨‍🌾",
       level: 0,
       levels: [
-        { priceGT: 50, priceStars: 25, incomePerHour: 5 },
-        { priceGT: 150, priceStars: 75, incomePerHour: 15 },
-        { priceGT: 450, priceStars: 225, incomePerHour: 45 },
-        { priceGT: 1350, priceStars: 675, incomePerHour: 135 },
-        { priceGT: 4000, priceStars: 2000, incomePerHour: 400 },
+        { priceGT: 10, priceStars: 5, incomePerHour: 0.001 },
+        { priceGT: 50, priceStars: 25, incomePerHour: 0.005 },
+        { priceGT: 200, priceStars: 100, incomePerHour: 0.02 },
+        { priceGT: 800, priceStars: 400, incomePerHour: 0.08 },
+        { priceGT: 3000, priceStars: 1500, incomePerHour: 0.3 },
       ],
     },
     {
@@ -786,24 +679,11 @@ export default function Home() {
       icon: "🌱",
       level: 0,
       levels: [
-        { priceGT: 100, priceStars: 50, incomePerHour: 10 },
-        { priceGT: 300, priceStars: 150, incomePerHour: 30 },
-        { priceGT: 900, priceStars: 450, incomePerHour: 90 },
-        { priceGT: 2700, priceStars: 1350, incomePerHour: 270 },
-        { priceGT: 8000, priceStars: 4000, incomePerHour: 800 },
-      ],
-    },
-    {
-      id: "chef",
-      name: "Chef",
-      icon: "👨‍🍳",
-      level: 0,
-      levels: [
-        { priceGT: 200, priceStars: 100, incomePerHour: 20 },
-        { priceGT: 600, priceStars: 300, incomePerHour: 60 },
-        { priceGT: 1800, priceStars: 900, incomePerHour: 180 },
-        { priceGT: 5400, priceStars: 2700, incomePerHour: 540 },
-        { priceGT: 16000, priceStars: 8000, incomePerHour: 1600 },
+        { priceGT: 25, priceStars: 12, incomePerHour: 0.002 },
+        { priceGT: 100, priceStars: 50, incomePerHour: 0.01 },
+        { priceGT: 400, priceStars: 200, incomePerHour: 0.04 },
+        { priceGT: 1600, priceStars: 800, incomePerHour: 0.16 },
+        { priceGT: 6000, priceStars: 3000, incomePerHour: 0.6 },
       ],
     },
   ]
@@ -828,11 +708,9 @@ export default function Home() {
     if (currency === "gt" && guineaTokens >= cost) {
       setGuineaTokens((prev) => prev - cost)
       setMiners((prev) => prev.map((m) => (m.id === minerId ? { ...m, level: m.level + 1 } : m)))
-      savePlayerData()
     } else if (currency === "stars" && telegramStars >= cost) {
       setTelegramStars((prev) => prev - cost)
       setMiners((prev) => prev.map((m) => (m.id === minerId ? { ...m, level: m.level + 1 } : m)))
-      savePlayerData()
     }
   }
 
@@ -866,7 +744,6 @@ export default function Home() {
             setTelegramStars(balanceData.telegramStars)
             clearInterval(pollInterval)
             alert(`✅ ${t("shop.purchase_success")} ${gtAmount} GT!`)
-            savePlayerData()
           }
 
           if (attempts >= 40) clearInterval(pollInterval)
@@ -902,40 +779,6 @@ export default function Home() {
     }
   }
 
-  useEffect(() => {
-    if (!agreedToTerms) return
-
-    const userId = tg.user?.id || 0
-    const lastOnlineKey = `lastOnline_${userId}`
-    const lastOnline = localStorage.getItem(lastOnlineKey)
-
-    if (lastOnline) {
-      const timeDiff = Date.now() - Number.parseInt(lastOnline)
-      const hoursOffline = timeDiff / (1000 * 60 * 60)
-
-      // Оффлайн доход составляет 50% от обычного
-      const offlineMultiplier = 0.5
-      const totalIncome = calculateTotalIncome()
-      const offlineEarnings = Math.floor(totalIncome * hoursOffline * offlineMultiplier)
-
-      if (offlineEarnings > 0) {
-        setGuineaTokens((prev) => prev + offlineEarnings)
-        console.log(`[v0] Offline earnings: ${offlineEarnings} GT for ${hoursOffline.toFixed(2)} hours`)
-        savePlayerData() // Save after calculating offline earnings
-      }
-    }
-
-    // Обновить время последнего онлайна
-    const updateLastOnline = () => {
-      localStorage.setItem(lastOnlineKey, Date.now().toString())
-    }
-
-    updateLastOnline()
-    const interval = setInterval(updateLastOnline, 60000) // каждую минуту
-
-    return () => clearInterval(interval)
-  }, [agreedToTerms, miners]) // Added miners as dependency to recalculate totalIncome
-
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
@@ -947,26 +790,14 @@ export default function Home() {
     )
   }
 
-  // Если не принято согласие, показываем только модальное окно
-  if (!agreedToTerms) {
-    return (
-      <>
-        <TermsModal open={showTermsModal} onAccept={handleAcceptTerms} />
-      </>
-    )
-  }
-
   const activePig = getPigById(activePigId)
   const totalIncome = calculateTotalIncome()
   const xpNeeded = calculateXPNeeded(level)
-  const currentMaxEnergy = getCurrentMaxEnergy(level) + maxEnergyLevel * 1000 // Use the calculated maxEnergy
-  const currentCarrotsPerClick = getCurrentCarrotsPerClick(level) * carrotsPerClickLevel // Use the calculated carrotsPerClick
+  const maxEnergy = getCurrentMaxEnergy(level) + maxEnergyLevel * 100
+  const carrotsPerClick = getCurrentCarrotsPerClick(level) * carrotsPerClickLevel
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-purple-950 to-black text-white pb-20 safe-area-inset">
-      {/* Добавить TermsModal рендер */}
-      <TermsModal open={showTermsModal} onAccept={handleAcceptTerms} />
-
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white pb-20 safe-area-inset">
       <div className="sticky top-0 z-10 bg-black/40 backdrop-blur-md border-b border-purple-500/30 p-2 sm:p-3">
         <div className="container mx-auto flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
@@ -1021,9 +852,7 @@ export default function Home() {
 
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-2xl">
         {activeTab === "main" && (
-          <div className="space-y-4 sm:space-y-6 pb-20">
-            {" "}
-            {/* Added pb-20 to accommodate the fixed bottom bar */}
+          <div className="space-y-4 sm:space-y-6">
             <div className="text-center space-y-3 sm:space-y-4">
               <div className="text-xl sm:text-2xl font-bold text-orange-400">{carrots.toLocaleString()} 🥕</div>
               {totalIncome > 0 && (
@@ -1040,7 +869,7 @@ export default function Home() {
 
               <button
                 onClick={handleGuineaPigClick}
-                disabled={energy < currentCarrotsPerClick} // Use the calculated currentCarrotsPerClick
+                disabled={energy < carrotsPerClick}
                 className="w-full max-w-[280px] sm:max-w-xs aspect-square rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed shadow-2xl mx-auto"
               >
                 {activePig && (
@@ -1055,25 +884,15 @@ export default function Home() {
               <div className="flex items-center justify-between bg-black/30 rounded-full p-2">
                 <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
                 <div className="flex-1 mx-2 sm:mx-3">
-                  <Progress value={(energy / currentMaxEnergy) * 100} className="h-2" />{" "}
-                  {/* Use calculated maxEnergy */}
+                  <Progress value={(energy / maxEnergy) * 100} className="h-2" />
                 </div>
                 <span className="text-xs sm:text-sm font-medium">
-                  {energy}/{currentMaxEnergy} {/* Use calculated maxEnergy */}
+                  {energy}/{maxEnergy}
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-gray-400">
-                {t("game.tap_power")} = {currentCarrotsPerClick} 🥕 {/* Use calculated carrotsPerClick */}
+                {t("game.tap_power")} = {carrotsPerClick} 🥕
               </p>
-            </div>
-            <div className="px-4">
-              <Button
-                onClick={exchangeCarrotsForGT}
-                disabled={carrots < 100000}
-                className="w-full bg-gradient-to-r from-orange-600 to-yellow-600 hover:from-orange-700 hover:to-yellow-700 py-6 text-lg font-bold"
-              >
-                🥕 → GT ({Math.floor(carrots / 100000)} GT доступно)
-              </Button>
             </div>
           </div>
         )}
@@ -1291,55 +1110,62 @@ export default function Home() {
           </div>
         )}
 
-        {activeTab === "about" && (
-          <div className="space-y-4 sm:space-y-6">
-            <div className="text-center space-y-2">
-              <h2 className="text-xl sm:text-2xl font-bold text-white">О игре</h2>
-              <p className="text-xs sm:text-sm text-gray-400">Guinea Pig Clicker v1.0</p>
-            </div>
+        {activeTab === "upgrades" && (
+          <div className="space-y-4">
+            <h2 className="text-xl sm:text-2xl font-bold text-white text-center">{t("tab.upgrades")}</h2>
 
             <Card className="bg-gradient-to-br from-purple-900/30 to-blue-900/20 border-purple-500/30 p-4">
-              <h3 className="font-semibold text-white mb-3">Следите за нами</h3>
-              <div className="grid grid-cols-1 gap-3">
-                <Button
-                  onClick={() => window.open("https://www.tiktok.com/@guinea.pig.clicker.en", "_blank")}
-                  className="bg-black hover:bg-gray-900 justify-start"
-                >
-                  <span className="text-2xl mr-3">🎵</span>
-                  <div className="text-left">
-                    <div className="font-semibold">TikTok (EN)</div>
-                    <div className="text-xs text-gray-400">@guinea.pig.clicker.en</div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-white">{t("upgrade.carrots_per_click")}</h3>
+                    <p className="text-xs text-gray-400">
+                      {t("upgrade.current")}: {carrotsPerClick}
+                    </p>
                   </div>
-                </Button>
-
-                <Button
-                  onClick={() => window.open("https://www.tiktok.com/@guinea.pig.clicker", "_blank")}
-                  className="bg-black hover:bg-gray-900 justify-start"
-                >
-                  <span className="text-2xl mr-3">🎵</span>
-                  <div className="text-left">
-                    <div className="font-semibold">TikTok (СНГ)</div>
-                    <div className="text-xs text-gray-400">@guinea.pig.clicker</div>
-                  </div>
-                </Button>
-
-                <Button
-                  onClick={() => window.open("https://www.youtube.com/@GuineaPigClicker", "_blank")}
-                  className="bg-red-600 hover:bg-red-700 justify-start"
-                >
-                  <span className="text-2xl mr-3">▶️</span>
-                  <div className="text-left">
-                    <div className="font-semibold">YouTube</div>
-                    <div className="text-xs text-gray-400">@GuineaPigClicker</div>
-                  </div>
-                </Button>
+                  <Button
+                    onClick={upgradeCarrotsPerClick}
+                    disabled={guineaTokens < carrotsPerClickLevel * 100}
+                    className="bg-yellow-600 hover:bg-yellow-700"
+                  >
+                    {carrotsPerClickLevel * 100} GT
+                  </Button>
+                </div>
               </div>
             </Card>
 
             <Card className="bg-gradient-to-br from-purple-900/30 to-blue-900/20 border-purple-500/30 p-4">
-              <h3 className="font-semibold text-white mb-2">Контакты</h3>
-              <p className="text-sm text-gray-300">Email: guaneapigclicker@gmail.com</p>
-              <p className="text-sm text-gray-300">Разработчик: baragoz_08</p>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-white">{t("upgrade.max_energy")}</h3>
+                    <p className="text-xs text-gray-400">
+                      {t("upgrade.current")}: {maxEnergy}
+                    </p>
+                  </div>
+                  <Button
+                    onClick={upgradeMaxEnergy}
+                    disabled={guineaTokens < maxEnergyLevel * 50}
+                    className="bg-yellow-600 hover:bg-yellow-700"
+                  >
+                    {maxEnergyLevel * 50} GT
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-orange-900/30 to-red-900/20 border-orange-500/30 p-4">
+              <div className="space-y-3">
+                <h3 className="font-semibold text-white text-center">{t("exchange.title")}</h3>
+                <p className="text-sm text-gray-300 text-center">{t("exchange.rate")}: 100,000 🥕 = 1 GT</p>
+                <Button
+                  onClick={exchangeCarrotsForGT}
+                  disabled={carrots < 100000}
+                  className="w-full bg-gradient-to-r from-orange-600 to-yellow-600 hover:from-orange-700 hover:to-yellow-700"
+                >
+                  {t("exchange.button")} ({Math.floor(carrots / 100000)} GT)
+                </Button>
+              </div>
             </Card>
           </div>
         )}
@@ -1406,15 +1232,6 @@ export default function Home() {
           >
             <Crown className="w-4 h-4 sm:w-5 sm:h-5" />
             <span className="hidden sm:inline">{t("tab.leaderboard")}</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("about")}
-            className={`flex flex-col items-center gap-0.5 sm:gap-1 p-1.5 sm:p-2 rounded-lg transition-colors text-[10px] sm:text-xs ${
-              activeTab === "about" ? "bg-purple-600 text-white" : "text-gray-400 hover:text-white"
-            }`}
-          >
-            <Info className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="hidden sm:inline">О нас</span>
           </button>
         </div>
       </div>
