@@ -21,8 +21,8 @@ CREATE TABLE IF NOT EXISTS players (
   max_energy_level INTEGER DEFAULT 1,
   current_energy INTEGER DEFAULT 1000,
   task_progress JSONB DEFAULT '{}'::jsonb,
-  last_online TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  terms_accepted BOOLEAN DEFAULT FALSE,
+  last_seen TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  accepted_terms BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
