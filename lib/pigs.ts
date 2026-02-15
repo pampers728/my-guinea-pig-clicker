@@ -100,3 +100,160 @@ export function getCurrentMaxEnergy(level: number): number {
 export function getCurrentCarrotsPerClick(level: number): number {
   return 1 + Math.floor(level / 5)
 }
+
+// Miners System
+export interface MinerType {
+  id: number
+  name: { [lang: string]: string }
+  icon: string
+  baseProfit: number // GT per hour at level 1
+  baseCost: number // GT cost for level 1
+  costMultiplier: number // Multiplier for each level
+  profitMultiplier: number // Multiplier for each level
+}
+
+export const MINERS: MinerType[] = [
+  {
+    id: 1,
+    name: { en: "Carrot Farmer", ru: "Морковный фермер", uk: "Морквяний фермер" },
+    icon: "🥕",
+    baseProfit: 0.1,
+    baseCost: 5,
+    costMultiplier: 2,
+    profitMultiplier: 1.5,
+  },
+  {
+    id: 2,
+    name: { en: "Hay Harvester", ru: "Сборщик сена", uk: "Збирач сіна" },
+    icon: "🌾",
+    baseProfit: 0.3,
+    baseCost: 15,
+    costMultiplier: 2,
+    profitMultiplier: 1.5,
+  },
+  {
+    id: 3,
+    name: { en: "Pellet Producer", ru: "Производитель гранул", uk: "Виробник гранул" },
+    icon: "🌰",
+    baseProfit: 0.8,
+    baseCost: 40,
+    costMultiplier: 2,
+    profitMultiplier: 1.5,
+  },
+  {
+    id: 4,
+    name: { en: "Veggie Vendor", ru: "Продавец овощей", uk: "Продавець овочів" },
+    icon: "🥬",
+    baseProfit: 2,
+    baseCost: 100,
+    costMultiplier: 2,
+    profitMultiplier: 1.5,
+  },
+  {
+    id: 5,
+    name: { en: "Guinea Garden", ru: "Свинский сад", uk: "Свинячий сад" },
+    icon: "🏡",
+    baseProfit: 5,
+    baseCost: 250,
+    costMultiplier: 2,
+    profitMultiplier: 1.5,
+  },
+  {
+    id: 6,
+    name: { en: "Snack Supplier", ru: "Поставщик лакомств", uk: "Постачальник ласощів" },
+    icon: "🍪",
+    baseProfit: 12,
+    baseCost: 600,
+    costMultiplier: 2,
+    profitMultiplier: 1.5,
+  },
+  {
+    id: 7,
+    name: { en: "Feed Factory", ru: "Фабрика корма", uk: "Фабрика корму" },
+    icon: "🏭",
+    baseProfit: 30,
+    baseCost: 1500,
+    costMultiplier: 2,
+    profitMultiplier: 1.5,
+  },
+  {
+    id: 8,
+    name: { en: "Treat Treasury", ru: "Хранилище угощений", uk: "Сховище частувань" },
+    icon: "💎",
+    baseProfit: 75,
+    baseCost: 3500,
+    costMultiplier: 2,
+    profitMultiplier: 1.5,
+  },
+  {
+    id: 9,
+    name: { en: "Nutrition Hub", ru: "Центр питания", uk: "Центр харчування" },
+    icon: "🏢",
+    baseProfit: 180,
+    baseCost: 8000,
+    costMultiplier: 2,
+    profitMultiplier: 1.5,
+  },
+  {
+    id: 10,
+    name: { en: "Gourmet Kitchen", ru: "Кухня гурманов", uk: "Кухня гурманів" },
+    icon: "👨‍🍳",
+    baseProfit: 450,
+    baseCost: 18000,
+    costMultiplier: 2,
+    profitMultiplier: 1.5,
+  },
+  {
+    id: 11,
+    name: { en: "Delicacy Den", ru: "Логово деликатесов", uk: "Лігво делікатесів" },
+    icon: "🎪",
+    baseProfit: 1100,
+    baseCost: 40000,
+    costMultiplier: 2,
+    profitMultiplier: 1.5,
+  },
+  {
+    id: 12,
+    name: { en: "Royal Pantry", ru: "Королевская кладовая", uk: "Королівська комора" },
+    icon: "👑",
+    baseProfit: 2700,
+    baseCost: 90000,
+    costMultiplier: 2,
+    profitMultiplier: 1.5,
+  },
+]
+
+export function getMinerCost(minerType: number, level: number): number {
+  const miner = MINERS.find((m) => m.id === minerType)
+  if (!miner) return 0
+  return Math.floor(miner.baseCost * Math.pow(miner.costMultiplier, level - 1))
+}
+
+export function getMinerProfit(minerType: number, level: number): number {
+  const miner = MINERS.find((m) => m.id === minerType)
+  if (!miner) return 0
+  return miner.baseProfit * Math.pow(miner.profitMultiplier, level - 1)
+}
+
+export function calculateOfflineIncome(
+  miners: { miner_type: number; level: number }[],
+  lastSeenDate: Date,
+): number {
+  const now = new Date()
+  const hoursOffline = Math.min((now.getTime() - lastSeenDate.getTime()) / (1000 * 60 * 60), 24) // Max 24 hours
+  
+  let totalProfitPerHour = 0
+  for (const miner of miners) {
+    totalProfitPerHour += getMinerProfit(miner.miner_type, miner.level)
+  }
+  
+  // Offline = 50% efficiency
+  const offlineProfit = totalProfitPerHour * 0.5 * hoursOffline
+  
+  // Anti-cheat: max 30 GT/hour
+  const maxIncome = 30 * hoursOffline
+  return Math.min(offlineProfit, maxIncome)
+}
+
+// Exchange rate: 250,000 carrots = 1 GT
+export const CARROT_TO_GT_RATE = 250000

@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
+import { supabase } from "@/lib/supabase"
+import { calculateOfflineIncome } from "@/lib/pigs"
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,104 +10,78 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "userId required" }, { status: 400 })
     }
 
-    // If MongoDB is not configured, return default player data
-    if (!clientPromise) {
-      console.log("[v0] MongoDB not configured, returning default player data")
-      return NextResponse.json({
-        userId,
+    // Check if player exists
+    const { data: existingPlayer, error: fetchError } = await supabase
+      .from("players")
+      .select("*, miners(*)")
+      .eq("user_id", userId)
+      .single()
+
+    if (fetchError && fetchError.code !== "PGRST116") {
+      console.error("[v0] Error fetching player:", fetchError)
+      throw fetchError
+    }
+
+    if (existingPlayer) {
+      // Calculate offline income
+      const lastSeen = new Date(existingPlayer.last_seen)
+      const offlineIncome = calculateOfflineIncome(existingPlayer.miners || [], lastSeen)
+      
+      if (offlineIncome > 0) {
+        // Update GT with offline income
+        const { error: updateError } = await supabase
+          .from("players")
+          .update({
+            guinea_tokens: (existingPlayer.guinea_tokens || 0) + offlineIncome,
+            last_seen: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("user_id", userId)
+
+        if (updateError) {
+          console.error("[v0] Error updating offline income:", updateError)
+        }
+
+        existingPlayer.guinea_tokens = (existingPlayer.guinea_tokens || 0) + offlineIncome
+      }
+
+      return NextResponse.json({ ...existingPlayer, offlineIncome })
+    }
+
+    // Create new player
+    const { data: newPlayer, error: createError } = await supabase
+      .from("players")
+      .insert({
+        user_id: userId,
         username: username || "Player",
         score: 0,
         xp: 0,
         level: 1,
         carrots: 0,
-        guineaTokens: 0,
-        telegramStars: 0,
-        totalClicks: 0,
-        activePigId: "white_basic",
-        pigs: [
-          {
-            id: "white_basic",
-            rarity: "COMMON",
-          },
-        ],
-        referralBonus: 0,
-        referralsCount: 0,
-        miners: [],
-        carrotsPerClickLevel: 1,
-        maxEnergyLevel: 1,
-        taskProgress: {},
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        guinea_tokens: 0,
+        telegram_stars: 0,
+        total_clicks: 0,
+        active_pig_id: "white_basic",
+        pigs: [{ id: "white_basic", rarity: "COMMON" }],
+        referral_bonus: 0,
+        referrals_count: 0,
+        carrots_per_click_level: 1,
+        max_energy_level: 1,
+        task_progress: {},
+        accepted_terms: false,
+        last_seen: new Date().toISOString(),
       })
+      .select("*, miners(*)")
+      .single()
+
+    if (createError) {
+      console.error("[v0] Error creating player:", createError)
+      throw createError
     }
 
-    const client = await clientPromise
-    const db = client.db("game")
-    const users = db.collection("players")
-
-    const result = await users.findOneAndUpdate(
-      { userId },
-      {
-        $setOnInsert: {
-          score: 0,
-          xp: 0,
-          level: 1,
-          carrots: 0,
-          guineaTokens: 0,
-          telegramStars: 0,
-          totalClicks: 0,
-          activePigId: "white_basic",
-          pigs: [
-            {
-              id: "white_basic",
-              rarity: "COMMON",
-            },
-          ],
-          referralBonus: 0,
-          referralsCount: 0,
-          miners: [],
-          carrotsPerClickLevel: 1,
-          maxEnergyLevel: 1,
-          taskProgress: {},
-          createdAt: new Date(),
-        },
-        $set: {
-          username: username || "Player",
-          updatedAt: new Date(),
-        },
-      },
-      { upsert: true, returnDocument: "after" },
-    )
-
-    return NextResponse.json(result)
+    return NextResponse.json({ ...newPlayer, offlineIncome: 0 })
   } catch (error) {
     console.error("[v0] Error loading player:", error)
-    // Return default player data on MongoDB error
-    return NextResponse.json({
-      userId: (await req.json()).userId,
-      username: (await req.json()).username || "Player",
-      score: 0,
-      xp: 0,
-      level: 1,
-      carrots: 0,
-      guineaTokens: 0,
-      telegramStars: 0,
-      totalClicks: 0,
-      activePigId: "white_basic",
-      pigs: [
-        {
-          id: "white_basic",
-          rarity: "COMMON",
-        },
-      ],
-      referralBonus: 0,
-      referralsCount: 0,
-      miners: [],
-      carrotsPerClickLevel: 1,
-      maxEnergyLevel: 1,
-      taskProgress: {},
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

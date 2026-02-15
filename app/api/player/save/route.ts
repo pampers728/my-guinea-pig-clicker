@@ -1,9 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import clientPromise from "@/lib/mongodb"
-
-function calculateXPNeeded(level: number): number {
-  return Math.floor(100 * Math.pow(level, 1.5))
-}
+import { supabase } from "@/lib/supabase"
+import { calculateXPNeeded } from "@/lib/pigs"
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,25 +11,17 @@ export async function POST(req: NextRequest) {
       guineaTokens,
       telegramStars,
       totalClicks,
-      miners,
       xp: currentXP,
       activePigId,
       pigs,
       carrotsPerClickLevel,
       maxEnergyLevel,
+      acceptedTerms,
     } = data
 
     if (!userId) {
       return NextResponse.json({ error: "userId required" }, { status: 400 })
     }
-
-    if (!clientPromise) {
-      return NextResponse.json({ error: "Database not configured" }, { status: 503 })
-    }
-
-    const client = await clientPromise
-    const db = client.db("game")
-    const users = db.collection("players")
 
     let level = 1
     let xp = currentXP || 0
@@ -43,29 +32,30 @@ export async function POST(req: NextRequest) {
       level += 1
     }
 
-    const updateData = {
-      score: carrots || 0,
-      xp,
-      level,
-      carrots: carrots || 0,
-      guineaTokens: guineaTokens || 0,
-      telegramStars: telegramStars || 0,
-      totalClicks: totalClicks || 0,
-      miners: miners || [],
-      activePigId: activePigId || "white_basic",
-      pigs: pigs || [],
-      carrotsPerClickLevel: carrotsPerClickLevel || 1,
-      maxEnergyLevel: maxEnergyLevel || 1,
-      updatedAt: new Date(),
-    }
+    const { error } = await supabase
+      .from("players")
+      .update({
+        score: carrots || 0,
+        xp,
+        level,
+        carrots: carrots || 0,
+        guinea_tokens: guineaTokens || 0,
+        telegram_stars: telegramStars || 0,
+        total_clicks: totalClicks || 0,
+        active_pig_id: activePigId || "white_basic",
+        pigs: pigs || [],
+        carrots_per_click_level: carrotsPerClickLevel || 1,
+        max_energy_level: maxEnergyLevel || 1,
+        accepted_terms: acceptedTerms || false,
+        last_seen: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", userId)
 
-    await users.updateOne(
-      { userId },
-      {
-        $set: updateData,
-      },
-      { upsert: true },
-    )
+    if (error) {
+      console.error("[v0] Error saving player:", error)
+      throw error
+    }
 
     return NextResponse.json({ ok: true, level })
   } catch (error) {
