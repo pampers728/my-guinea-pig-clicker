@@ -93,12 +93,36 @@ export function getLevelRewards(level: number): { pig?: string; bonus?: string }
   return rewards[level] || {}
 }
 
+// Upgrade system based on user table
+const ENERGY_LEVELS = [1000, 1500, 2000, 3500, 5000, 6500, 7500, 8500, 9500, 10000]
+const CARROTS_PER_CLICK_COST = [1000, 2000, 4000, 8000, 16000] // Levels 1-5 in carrots
+const ENERGY_COST = [1000, 2000, 4000, 8000, 16000] // Levels 1-5 in carrots
+const GT_UPGRADE_COST = [5, 10, 15, 20, 25] // Levels 6-10 in GT
+
 export function getCurrentMaxEnergy(level: number): number {
-  return 1000 + level * 50
+  if (level < 1 || level > 10) return 1000
+  return ENERGY_LEVELS[level - 1]
 }
 
 export function getCurrentCarrotsPerClick(level: number): number {
-  return 1 + Math.floor(level / 5)
+  if (level < 1 || level > 10) return 1
+  return level // 1 морковка за тап на 1 уровне, 10 на 10 уровне
+}
+
+export function getCarrotsPerClickUpgradeCost(currentLevel: number): { type: 'carrots' | 'gt', amount: number } | null {
+  if (currentLevel >= 10) return null
+  if (currentLevel < 5) {
+    return { type: 'carrots', amount: CARROTS_PER_CLICK_COST[currentLevel] }
+  }
+  return { type: 'gt', amount: GT_UPGRADE_COST[currentLevel - 5] }
+}
+
+export function getMaxEnergyUpgradeCost(currentLevel: number): { type: 'carrots' | 'gt', amount: number } | null {
+  if (currentLevel >= 10) return null
+  if (currentLevel < 5) {
+    return { type: 'carrots', amount: ENERGY_COST[currentLevel] }
+  }
+  return { type: 'gt', amount: GT_UPGRADE_COST[currentLevel - 5] }
 }
 
 // Miners System
