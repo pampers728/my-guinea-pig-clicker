@@ -100,7 +100,20 @@ export default function Home() {
     if (startParam) handleReferral(Number.parseInt(startParam))
   }, [tg.user])
 
-  // Auto-save every 30s
+  // Save to localStorage on every state change (instant persistence)
+  useEffect(() => {
+    if (isLoading) return
+    const userId = tg.user?.id || "guest"
+    const data = {
+      carrots, guineaTokens, telegramStars, level, xp,
+      totalClicks, activePigId, unlockedPigs, playerMiners,
+      carrotsPerClickLevel, maxEnergyLevel, referralBonus, referralsCount,
+    }
+    localStorage.setItem(`gpc_${userId}`, JSON.stringify(data))
+    localStorage.setItem(`gpc_carrots_${userId}`, String(carrots))
+  }, [carrots, guineaTokens, telegramStars, level, xp, totalClicks, activePigId, unlockedPigs, playerMiners, carrotsPerClickLevel, maxEnergyLevel, referralBonus, referralsCount, isLoading])
+
+  // Auto-save to server every 30s
   useEffect(() => {
     const interval = setInterval(savePlayerData, 30000)
     return () => clearInterval(interval)
@@ -133,19 +146,53 @@ export default function Home() {
   }, [])
 
   const loadPlayerData = async () => {
-    const userId = tg.user?.id || Date.now()
+    const userId = tg.user?.id || "guest"
+
+    // 1. Load from localStorage immediately so game works instantly
+    const cached = localStorage.getItem(`gpc_${userId}`)
+    if (cached) {
+      try {
+        const d = JSON.parse(cached)
+        setCarrots(d.carrots || 0)
+        setGuineaTokens(d.guineaTokens || 0)
+        setTelegramStars(d.telegramStars || 0)
+        setLevel(d.level || 1)
+        setXP(d.xp || 0)
+        setTotalClicks(d.totalClicks || 0)
+        setActivePigId(d.activePigId || "white_basic")
+        setUnlockedPigs(d.unlockedPigs || ["white_basic"])
+        setCarrotsPerClickLevel(d.carrotsPerClickLevel || 1)
+        setMaxEnergyLevel(d.maxEnergyLevel || 1)
+        setPlayerMiners(d.playerMiners || [])
+        setEnergy(getCurrentMaxEnergy(d.maxEnergyLevel || 1))
+        setReferralBonus(d.referralBonus || 0)
+        setReferralsCount(d.referralsCount || 0)
+      } catch (e) {
+        console.error("[v0] localStorage parse error:", e)
+      }
+    }
+    setIsLoading(false)
+
+    // 2. Then sync with Supabase in background
+    if (!tg.user) return
     try {
       const res = await fetch("/api/player/load", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, username: tg.user?.username }),
       })
-      if (!res.ok) { setIsLoading(false); return }
+      if (!res.ok) return
       const data = await res.json()
+      if (!data || data.error) return
 
-      if (data) {
+      // Only apply if server data is newer (higher carrots or GT)
+      const serverCarrots = data.carrots || 0
+      const serverGT = parseFloat(data.guinea_tokens) || 0
+      const localCarrots = Number(localStorage.getItem(`gpc_carrots_${userId}`) || 0)
+
+      if (serverCarrots >= localCarrots) {
         setCarrots(data.carrots || 0)
-        setGuineaTokens(parseFloat(data.guinea_tokens) || 0)
+        setGuineaTokens(serverGT)
         setTelegramStars(data.telegram_stars || 0)
         setLevel(data.level || 1)
         setXP(data.xp || 0)
@@ -165,9 +212,7 @@ export default function Home() {
         }
       }
     } catch (e) {
-      console.error("[v0] Failed to load player:", e)
-    } finally {
-      setIsLoading(false)
+      console.error("[v0] Failed to sync with server:", e)
     }
   }
 
