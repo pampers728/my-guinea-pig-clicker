@@ -94,10 +94,11 @@ export function getLevelRewards(level: number): { pig?: string; bonus?: string }
 }
 
 // Upgrade system based on user table
+// Levels 1-5: carrots, Levels 6-10: GT
 const ENERGY_LEVELS = [1000, 1500, 2000, 3500, 5000, 6500, 7500, 8500, 9500, 10000]
-const CARROTS_PER_CLICK_COST = [1000, 2000, 4000, 8000, 16000] // Levels 1-5 in carrots
-const ENERGY_COST = [1000, 2000, 4000, 8000, 16000] // Levels 1-5 in carrots
-const GT_UPGRADE_COST = [5, 10, 15, 20, 25] // Levels 6-10 in GT
+const CARROTS_PER_CLICK_COST = [5000, 15000, 40000, 100000, 220000]  // levels 1→2, 2→3, 3→4, 4→5, 5→6
+const ENERGY_COST =            [5000, 15000, 40000, 100000, 220000]  // same structure
+const GT_UPGRADE_COST =        [8, 18, 32, 55, 90]                   // levels 6→7, 7→8, 8→9, 9→10
 
 export function getCurrentMaxEnergy(level: number): number {
   if (level < 1 || level > 10) return 1000
