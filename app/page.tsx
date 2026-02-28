@@ -21,7 +21,9 @@ import {
   ShoppingBag,
   TrendingUp,
   ArrowUpCircle,
+  Gift,
 } from "lucide-react"
+import FortuneWheel from "@/components/FortuneWheel"
 import { useTelegram } from "@/components/TelegramProvider"
 import { useTranslation, type Language } from "@/lib/i18n"
 import {
@@ -79,6 +81,15 @@ export default function Home() {
   const [carrotsPerClickLevel, setCarrotsPerClickLevel] = useState(1)
   const [maxEnergyLevel, setMaxEnergyLevel] = useState(1)
 
+  // Fortune wheel & ad rewards
+  const [wheelSpinsLeft, setWheelSpinsLeft] = useState(3)
+  const [carrotRewardClaimed, setCarrotRewardClaimed] = useState(false)
+  const [energyRewardClaimed, setEnergyRewardClaimed] = useState(false)
+  const [autoTapActive, setAutoTapActive] = useState(false)
+  const [autoTapEndTime, setAutoTapEndTime] = useState(0)
+  const [boosterActive, setBoosterActive] = useState(false)
+  const [boosterEndTime, setBoosterEndTime] = useState(0)
+
   const maxEnergy = getCurrentMaxEnergy(maxEnergyLevel)
   const carrotsPerClick = getCurrentCarrotsPerClick(carrotsPerClickLevel)
   const xpNeeded = calculateXPNeeded(level)
@@ -99,6 +110,53 @@ export default function Home() {
     const startParam = tg.initDataUnsafe?.start_parameter
     if (startParam) handleReferral(Number.parseInt(startParam))
   }, [tg.user])
+
+  // Daily reset for wheel spins and ad rewards
+  useEffect(() => {
+    const userId = tg.user?.id || "guest"
+    const lastReset = localStorage.getItem(`gpc_daily_${userId}`)
+    const today = new Date().toDateString()
+    if (lastReset !== today) {
+      setWheelSpinsLeft(3)
+      setCarrotRewardClaimed(false)
+      setEnergyRewardClaimed(false)
+      localStorage.setItem(`gpc_daily_${userId}`, today)
+    } else {
+      setWheelSpinsLeft(Number(localStorage.getItem(`gpc_spins_${userId}`) || 3))
+      setCarrotRewardClaimed(localStorage.getItem(`gpc_carrotReward_${userId}`) === "1")
+      setEnergyRewardClaimed(localStorage.getItem(`gpc_energyReward_${userId}`) === "1")
+    }
+  }, [tg.user])
+
+  // Auto-tap timer
+  useEffect(() => {
+    if (!autoTapActive || autoTapEndTime <= Date.now()) {
+      setAutoTapActive(false)
+      return
+    }
+    const interval = setInterval(() => {
+      if (Date.now() >= autoTapEndTime) {
+        setAutoTapActive(false)
+        clearInterval(interval)
+        return
+      }
+      setCarrots((prev) => prev + carrotsPerClick)
+      setXP((prev) => prev + 1)
+      setTotalClicks((prev) => prev + 1)
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [autoTapActive, autoTapEndTime, carrotsPerClick])
+
+  // Booster timer check
+  useEffect(() => {
+    if (!boosterActive) return
+    const interval = setInterval(() => {
+      if (Date.now() >= boosterEndTime) {
+        setBoosterActive(false)
+      }
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [boosterActive, boosterEndTime])
 
   // Save to localStorage on every state change (instant persistence)
   useEffect(() => {
@@ -260,7 +318,8 @@ export default function Home() {
 
   const handleGuineaPigClick = () => {
     if (energy < 1) return
-    setCarrots((prev) => prev + carrotsPerClick)
+    const multiplier = boosterActive ? 2 : 1
+    setCarrots((prev) => prev + carrotsPerClick * multiplier)
     setEnergy((prev) => prev - 1)
     setTotalClicks((prev) => prev + 1)
 
@@ -278,6 +337,53 @@ export default function Home() {
 
   const unlockPig = (pigId: string) => {
     setUnlockedPigs((prev) => prev.includes(pigId) ? prev : [...prev, pigId])
+  }
+
+  // Fortune wheel handlers
+  const handleWheelSpin = () => {
+    const userId = tg.user?.id || "guest"
+    const newSpins = wheelSpinsLeft - 1
+    setWheelSpinsLeft(newSpins)
+    localStorage.setItem(`gpc_spins_${userId}`, String(newSpins))
+  }
+
+  const handleWheelPrize = (prize: any, value: number) => {
+    switch (prize.type) {
+      case "carrots":
+        setCarrots((prev) => prev + value)
+        break
+      case "energy":
+        setEnergy((prev) => Math.min(prev + value, maxEnergy))
+        break
+      case "gt":
+        setGuineaTokens((prev) => prev + value)
+        break
+      case "autotap":
+        setAutoTapActive(true)
+        setAutoTapEndTime(Date.now() + value * 60 * 1000)
+        break
+      case "booster":
+        setBoosterActive(true)
+        setBoosterEndTime(Date.now() + value * 60 * 1000)
+        break
+    }
+  }
+
+  // Ad rewards
+  const claimCarrotReward = () => {
+    if (carrotRewardClaimed) return
+    const userId = tg.user?.id || "guest"
+    setCarrots((prev) => prev + 2000)
+    setCarrotRewardClaimed(true)
+    localStorage.setItem(`gpc_carrotReward_${userId}`, "1")
+  }
+
+  const claimEnergyReward = () => {
+    if (energyRewardClaimed) return
+    const userId = tg.user?.id || "guest"
+    setEnergy((prev) => Math.min(prev + 1000, maxEnergy))
+    setEnergyRewardClaimed(true)
+    localStorage.setItem(`gpc_energyReward_${userId}`, "1")
   }
 
   // Upgrade carrots per click
@@ -475,7 +581,90 @@ export default function Home() {
                 <Progress value={(energy / maxEnergy) * 100} className="h-2 flex-1" />
                 <span className="text-xs font-medium">{energy}/{maxEnergy}</span>
               </div>
-              <p className="text-xs text-gray-400">+{carrotsPerClick} 🥕 за тап</p>
+              <p className="text-xs text-gray-400">
+                +{carrotsPerClick * (boosterActive ? 2 : 1)} 🥕 за тап
+                {boosterActive && <span className="text-pink-400 ml-1">(x2 буст!)</span>}
+              </p>
+              {autoTapActive && (
+                <p className="text-xs text-green-400 animate-pulse">🤖 Авто-тап активен</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* BONUSES TAB */}
+        {activeTab === "bonuses" && (
+          <div className="space-y-4">
+            {/* Active boosts indicator */}
+            {(autoTapActive || boosterActive) && (
+              <Card className="bg-purple-900/40 border-purple-500/30 p-3">
+                <h3 className="text-sm font-bold text-purple-300 mb-2">Aktivnye busty</h3>
+                <div className="space-y-1">
+                  {autoTapActive && (
+                    <div className="flex items-center gap-2 text-xs text-green-400">
+                      <span>🤖</span>
+                      <span>Auto-tap aktiven ({Math.max(0, Math.ceil((autoTapEndTime - Date.now()) / 60000))} min)</span>
+                    </div>
+                  )}
+                  {boosterActive && (
+                    <div className="flex items-center gap-2 text-xs text-pink-400">
+                      <span>🚀</span>
+                      <span>x2 morkovki ({Math.max(0, Math.ceil((boosterEndTime - Date.now()) / 60000))} min)</span>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            )}
+
+            {/* Fortune Wheel */}
+            <FortuneWheel
+              spinsLeft={wheelSpinsLeft}
+              onSpin={handleWheelSpin}
+              onPrize={handleWheelPrize}
+              canSpin={wheelSpinsLeft > 0}
+            />
+
+            {/* Ad Rewards */}
+            <div className="space-y-3 mt-6">
+              <h3 className="text-lg font-bold text-white text-center">Nagrady za reklamu</h3>
+
+              <Card className={`p-4 border ${carrotRewardClaimed ? "bg-gray-800/40 border-gray-600/30" : "bg-orange-900/30 border-orange-500/30"}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="text-3xl">🥕</div>
+                    <div>
+                      <p className="font-bold text-white">+2 000 morkovok</p>
+                      <p className="text-xs text-gray-400">1 raz v den' za reklamu</p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={claimCarrotReward}
+                    disabled={carrotRewardClaimed}
+                    className={`h-10 px-4 ${carrotRewardClaimed ? "bg-gray-600" : "bg-orange-600 hover:bg-orange-700"}`}
+                  >
+                    {carrotRewardClaimed ? "Polucheno" : "Smotret'"}
+                  </Button>
+                </div>
+              </Card>
+
+              <Card className={`p-4 border ${energyRewardClaimed ? "bg-gray-800/40 border-gray-600/30" : "bg-green-900/30 border-green-500/30"}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="text-3xl">⚡</div>
+                    <div>
+                      <p className="font-bold text-white">+1 000 energii</p>
+                      <p className="text-xs text-gray-400">1 raz v den' za reklamu</p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={claimEnergyReward}
+                    disabled={energyRewardClaimed}
+                    className={`h-10 px-4 ${energyRewardClaimed ? "bg-gray-600" : "bg-green-600 hover:bg-green-700"}`}
+                  >
+                    {energyRewardClaimed ? "Polucheno" : "Smotret'"}
+                  </Button>
+                </div>
+              </Card>
             </div>
           </div>
         )}
@@ -748,9 +937,10 @@ export default function Home() {
 
       {/* Bottom navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-black/60 backdrop-blur-md border-t border-purple-500/30">
-        <div className="grid grid-cols-6 bg-gray-900/50 p-2 rounded-t-2xl max-w-2xl mx-auto">
+        <div className="grid grid-cols-7 bg-gray-900/50 p-2 rounded-t-2xl max-w-2xl mx-auto">
           {[
             { id: "main", icon: <HomeIcon className="w-5 h-5" />, label: t("tab.main") },
+            { id: "bonuses", icon: <Gift className="w-5 h-5" />, label: "Bonus" },
             { id: "miners", icon: <Pickaxe className="w-5 h-5" />, label: t("tab.miners") },
             { id: "upgrades", icon: <ArrowUpCircle className="w-5 h-5" />, label: t("tab.upgrades") },
             { id: "friends", icon: <Users className="w-5 h-5" />, label: t("tab.friends") },
