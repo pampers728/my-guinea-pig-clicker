@@ -1,0 +1,14 @@
+{
+  "functions": {
+    "pages/api/**/*.ts": {
+      "maxDuration": 10
+    }
+  },
+  "env": {
+    "SUPABASE_URL": "@supabase-url",
+    "SUPABASE_SERVICE_ROLE_KEY": "@supabase-service-role-key"
+  },
+  "build": {
+    "env": {}
+  }
+}

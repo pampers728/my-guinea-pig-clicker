@@ -4,29 +4,29 @@ import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useFortuneWheel } from "@/hooks/useFortuneWheel"
+import { WheelPrize } from "@/types/rewards"
 
-// Prize definitions
-const PRIZES = [
-  { id: 1, label: "+50-500 🥕", color: "#f97316", type: "carrots" as const, min: 50, max: 500, prob: 25 },
-  { id: 2, label: "+500-2500 🥕", color: "#ea580c", type: "carrots" as const, min: 500, max: 2500, prob: 25 },
-  { id: 3, label: "+100 Energy", color: "#22c55e", type: "energy" as const, min: 100, max: 300, prob: 13 },
-  { id: 4, label: "+300-1000 Energy", color: "#16a34a", type: "energy" as const, min: 300, max: 1000, prob: 12 },
-  { id: 5, label: "Auto-tap 30m", color: "#8b5cf6", type: "autotap" as const, duration: 30, prob: 5 },
-  { id: 6, label: "Auto-tap 60m", color: "#7c3aed", type: "autotap" as const, duration: 60, prob: 2 },
-  { id: 7, label: "x2 Boost 30m", color: "#ec4899", type: "booster" as const, duration: 30, prob: 7 },
-  { id: 8, label: "x2 Boost 60m", color: "#db2777", type: "booster" as const, duration: 60, prob: 3 },
-  { id: 9, label: "+0.01 GT", color: "#eab308", type: "gt" as const, min: 0.01, max: 0.03, prob: 5 },
-  { id: 10, label: "+0.05-0.1 GT", color: "#ca8a04", type: "gt" as const, min: 0.05, max: 0.1, prob: 3 },
+// Prize definitions с типизацией
+const PRIZES: WheelPrize[] = [
+  { id: 1, label: "+50-500 🥕", color: "#f97316", type: "carrots", min: 50, max: 500, prob: 25 },
+  { id: 2, label: "+500-2500 🥕", color: "#ea580c", type: "carrots", min: 500, max: 2500, prob: 25 },
+  { id: 3, label: "+100 Energy", color: "#22c55e", type: "energy", min: 100, max: 300, prob: 13 },
+  { id: 4, label: "+300-1000 Energy", color: "#16a34a", type: "energy", min: 300, max: 1000, prob: 12 },
+  { id: 5, label: "Auto-tap 30m", color: "#8b5cf6", type: "autotap", duration: 30, prob: 5 },
+  { id: 6, label: "Auto-tap 60m", color: "#7c3aed", type: "autotap", duration: 60, prob: 2 },
+  { id: 7, label: "x2 Boost 30m", color: "#ec4899", type: "booster", duration: 30, prob: 7 },
+  { id: 8, label: "x2 Boost 60m", color: "#db2777", type: "booster", duration: 60, prob: 3 },
+  { id: 9, label: "+0.01 GT", color: "#eab308", type: "gt", min: 0.01, max: 0.03, prob: 5 },
+  { id: 10, label: "+0.05-0.1 GT", color: "#ca8a04", type: "gt", min: 0.05, max: 0.1, prob: 3 },
 ]
 
 interface FortuneWheelProps {
-  spinsLeft: number
-  onSpin: () => void
-  onPrize: (prize: typeof PRIZES[number], value: number) => void
-  canSpin: boolean
+  userId: string
+  onPrize: (prize: WheelPrize, value: number) => void
 }
 
-function weightedRandom() {
+function weightedRandom(): WheelPrize {
   const totalProb = PRIZES.reduce((s, p) => s + p.prob, 0)
   let r = Math.random() * totalProb
   for (const prize of PRIZES) {
@@ -36,178 +36,125 @@ function weightedRandom() {
   return PRIZES[0]
 }
 
-export default function FortuneWheel({ spinsLeft, onSpin, onPrize, canSpin }: FortuneWheelProps) {
+export function FortuneWheel({ userId, onPrize }: FortuneWheelProps) {
   const [spinning, setSpinning] = useState(false)
-  const [rotation, setRotation] = useState(0)
   const [showResult, setShowResult] = useState(false)
-  const [lastPrize, setLastPrize] = useState<{ prize: typeof PRIZES[number]; value: number } | null>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [wonPrize, setWonPrize] = useState<WheelPrize | null>(null)
+  const [wonAmount, setWonAmount] = useState(0)
+  
+  const {
+    loading,
+    canSpin,
+    spinsLeft,
+    validateAdWatch,
+    claimPrize,
+    checkDailyLimits
+  } = useFortuneWheel({ userId, onPrize })
 
-  const segmentAngle = 360 / PRIZES.length
-
-  // Draw wheel
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
+    checkDailyLimits()
+  }, [checkDailyLimits])
 
-    const size = canvas.width
-    const center = size / 2
-    const radius = center - 4
+  const handleSpin = async () => {
+    if (!canSpin || spinning || loading) return
 
-    ctx.clearRect(0, 0, size, size)
-
-    PRIZES.forEach((prize, i) => {
-      const startAngle = (i * segmentAngle - 90) * (Math.PI / 180)
-      const endAngle = ((i + 1) * segmentAngle - 90) * (Math.PI / 180)
-
-      // Segment
-      ctx.beginPath()
-      ctx.moveTo(center, center)
-      ctx.arc(center, center, radius, startAngle, endAngle)
-      ctx.closePath()
-      ctx.fillStyle = prize.color
-      ctx.fill()
-      ctx.strokeStyle = "#1e1b4b"
-      ctx.lineWidth = 2
-      ctx.stroke()
-
-      // Text
-      ctx.save()
-      ctx.translate(center, center)
-      ctx.rotate(startAngle + (endAngle - startAngle) / 2)
-      ctx.fillStyle = "#fff"
-      ctx.font = "bold 11px sans-serif"
-      ctx.textAlign = "center"
-      ctx.shadowColor = "#000"
-      ctx.shadowBlur = 3
-      const text = prize.label.length > 14 ? prize.label.substring(0, 12) + ".." : prize.label
-      ctx.fillText(text, radius * 0.6, 4)
-      ctx.restore()
-    })
-
-    // Center circle
-    ctx.beginPath()
-    ctx.arc(center, center, 18, 0, Math.PI * 2)
-    ctx.fillStyle = "#1e1b4b"
-    ctx.fill()
-    ctx.strokeStyle = "#a78bfa"
-    ctx.lineWidth = 3
-    ctx.stroke()
-    ctx.fillStyle = "#fff"
-    ctx.font = "bold 12px sans-serif"
-    ctx.textAlign = "center"
-    ctx.textBaseline = "middle"
-    ctx.fillText("SPIN", center, center)
-  }, [])
-
-  const spin = () => {
-    if (spinning || !canSpin || spinsLeft <= 0) return
+    // 1. Сначала валидируем просмотр рекламы
+    const isValidated = await validateAdWatch()
+    if (!isValidated) return
 
     setSpinning(true)
-    onSpin()
 
-    const prize = weightedRandom()
-    const prizeIndex = PRIZES.findIndex((p) => p.id === prize.id)
+    try {
+      // 2. Выбираем случайный приз
+      const selectedPrize = weightedRandom()
+      
+      // 3. Отправляем запрос на получение награды
+      const claimedPrize = await claimPrize(selectedPrize.id)
+      
+      // 4. Показываем результат
+      setWonPrize(claimedPrize)
+      setWonAmount(claimedPrize.amount || 0)
+      
+      // Имитируем вращение колеса
+      setTimeout(() => {
+        setSpinning(false)
+        setShowResult(true)
+      }, 3000)
 
-    // Calculate target rotation
-    const targetSegment = prizeIndex * segmentAngle
-    const fullRotations = 5 + Math.floor(Math.random() * 3)
-    const randomOffset = Math.random() * (segmentAngle * 0.6) + segmentAngle * 0.2
-    const totalRotation = fullRotations * 360 + (360 - targetSegment - randomOffset)
-
-    setRotation((prev) => prev + totalRotation)
-
-    // Prize value
-    let value = 0
-    if ("min" in prize && "max" in prize) {
-      if (prize.type === "gt") {
-        value = Math.round((prize.min + Math.random() * (prize.max - prize.min)) * 100) / 100
-      } else {
-        value = Math.floor(prize.min + Math.random() * (prize.max - prize.min))
-      }
-    } else if ("duration" in prize) {
-      value = prize.duration
-    }
-
-    setTimeout(() => {
+    } catch (error) {
+      console.error('Spin error:', error)
       setSpinning(false)
-      setLastPrize({ prize, value })
-      setShowResult(true)
-      onPrize(prize, value)
-    }, 4000)
+      alert('Ошибка при получении награды: ' + error)
+    }
   }
 
-  const getPrizeText = () => {
-    if (!lastPrize) return ""
-    const { prize, value } = lastPrize
-    switch (prize.type) {
-      case "carrots": return `+${value.toLocaleString()} morkovok!`
-      case "energy": return `+${value} energii!`
-      case "gt": return `+${value.toFixed(2)} GT!`
-      case "autotap": return `Auto-tap na ${value} minut!`
-      case "booster": return `x2 morkovok na ${value} minut!`
-      default: return "Priz!"
-    }
+  const closeResult = () => {
+    setShowResult(false)
+    setWonPrize(null)
+    setWonAmount(0)
   }
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <h2 className="text-xl font-bold text-white text-center">Koleso Fortuny</h2>
+    <>
+      <Card className="p-6 bg-gradient-to-br from-purple-900/20 to-blue-900/20 border-purple-500/30">
+        <div className="text-center space-y-4">
+          <h3 className="text-2xl font-bold text-white">🎰 Колесо Фортуны</h3>
+          <p className="text-gray-300">
+            Осталось вращений сегодня: <span className="font-bold text-yellow-400">{spinsLeft}</span>
+          </p>
+          
+          {/* Простое представление колеса */}
+          <div className={`mx-auto w-48 h-48 rounded-full border-4 border-yellow-400 bg-gradient-to-r from-red-500 via-yellow-500 to-blue-500 flex items-center justify-center text-6xl transition-transform duration-3000 ${spinning ? 'animate-spin' : ''}`}>
+            🎯
+          </div>
 
-      <Card className="bg-black/30 border-purple-500/30 px-4 py-2">
-        <span className="text-sm text-gray-300">
-          Popytki segodnya: <span className="font-bold text-yellow-400">{spinsLeft}</span>/3
-        </span>
+          <Button
+            onClick={handleSpin}
+            disabled={!canSpin || spinning || loading}
+            size="lg"
+            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+          >
+            {spinning ? 'Крутится...' : 
+             loading ? 'Загрузка...' : 
+             !canSpin ? 'Лимит исчерпан' : 
+             'Крутить колесо'}
+          </Button>
+
+          {!canSpin && (
+            <p className="text-sm text-red-400">
+              Вы достигли дневного лимита. Попробуйте завтра!
+            </p>
+          )}
+        </div>
       </Card>
 
-      {/* Wheel container */}
-      <div className="relative">
-        {/* Pointer */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 z-10">
-          <div className="w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[20px] border-t-yellow-400 drop-shadow-lg" />
-        </div>
-
-        <div
-          className="transition-transform ease-out"
-          style={{
-            transform: `rotate(${rotation}deg)`,
-            transitionDuration: spinning ? "4s" : "0s",
-            transitionTimingFunction: "cubic-bezier(0.17, 0.67, 0.12, 0.99)",
-          }}
-        >
-          <canvas
-            ref={canvasRef}
-            width={280}
-            height={280}
-            className="rounded-full border-4 border-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.4)]"
-          />
-        </div>
-      </div>
-
-      <Button
-        onClick={spin}
-        disabled={spinning || !canSpin || spinsLeft <= 0}
-        className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-black font-bold text-lg px-8 py-3 h-auto disabled:opacity-40 shadow-lg"
-      >
-        {spinning ? "Krutitsya..." : spinsLeft <= 0 ? "Popytki zakonchilis'" : "Krutit' za reklamu"}
-      </Button>
-
-      {/* Result dialog */}
-      <Dialog open={showResult} onOpenChange={setShowResult}>
-        <DialogContent className="bg-black/95 backdrop-blur-md border-yellow-500/50 text-white max-w-xs">
+      {/* Диалог с результатом */}
+      <Dialog open={showResult} onOpenChange={closeResult}>
+        <DialogContent className="bg-gradient-to-br from-green-900/90 to-blue-900/90 border-green-500/50">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-center text-yellow-400">
-              Pozdravlyaem!
+            <DialogTitle className="text-center text-2xl text-white">
+              🎉 Поздравляем!
             </DialogTitle>
           </DialogHeader>
-          <div className="text-center space-y-3 py-4">
-            <div className="text-5xl">{lastPrize?.prize.type === "carrots" ? "🥕" : lastPrize?.prize.type === "energy" ? "⚡" : lastPrize?.prize.type === "gt" ? "💰" : lastPrize?.prize.type === "autotap" ? "🤖" : "🚀"}</div>
-            <p className="text-xl font-bold">{getPrizeText()}</p>
-          </div>
+          
+          {wonPrize && (
+            <div className="text-center space-y-4 py-4">
+              <div className="text-6xl">{wonPrize.label.split(' ')[1]}</div>
+              <h3 className="text-xl font-bold text-white">
+                Вы выиграли: {wonPrize.label}
+              </h3>
+              {wonAmount > 0 && (
+                <p className="text-lg text-green-400">
+                  Количество: {wonAmount}
+                </p>
+              )}
+              <Button onClick={closeResult} className="mt-4">
+                Отлично!
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   )
 }
