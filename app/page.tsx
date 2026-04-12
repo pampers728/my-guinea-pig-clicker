@@ -171,11 +171,11 @@ export default function Home() {
     localStorage.setItem(`gpc_carrots_${userId}`, String(carrots))
   }, [carrots, guineaTokens, telegramStars, level, xp, totalClicks, activePigId, unlockedPigs, playerMiners, carrotsPerClickLevel, maxEnergyLevel, referralBonus, referralsCount, isLoading])
 
-  // Auto-save to server every 30s
-  useEffect(() => {
-    const interval = setInterval(savePlayerData, 30000)
-    return () => clearInterval(interval)
-  }, [carrots, guineaTokens, telegramStars, level, xp, totalClicks, activePigId, unlockedPigs, playerMiners, carrotsPerClickLevel, maxEnergyLevel])
+  // Auto-save to server every 30s (disabled in v0 preview - uses localStorage only)
+  // useEffect(() => {
+  //   const interval = setInterval(savePlayerData, 30000)
+  //   return () => clearInterval(interval)
+  // }, [carrots, guineaTokens, telegramStars, level, xp, totalClicks, activePigId, unlockedPigs, playerMiners, carrotsPerClickLevel, maxEnergyLevel])
 
   // Miners passive income (online = 100%)
   useEffect(() => {
@@ -230,78 +230,12 @@ export default function Home() {
       }
     }
     setIsLoading(false)
-
-    // 2. Then sync with Supabase in background
-    if (!tg.user) return
-    try {
-      const res = await fetch("/api/player/load", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, username: tg.user?.username }),
-      })
-      if (!res.ok) return
-      const data = await res.json()
-      if (!data || data.error) return
-
-      // Only apply if server data is newer (higher carrots or GT)
-      const serverCarrots = data.carrots || 0
-      const serverGT = parseFloat(data.guinea_tokens) || 0
-      const localCarrots = Number(localStorage.getItem(`gpc_carrots_${userId}`) || 0)
-
-      if (serverCarrots >= localCarrots) {
-        setCarrots(data.carrots || 0)
-        setGuineaTokens(serverGT)
-        setTelegramStars(data.telegram_stars || 0)
-        setLevel(data.level || 1)
-        setXP(data.xp || 0)
-        setTotalClicks(data.total_clicks || 0)
-        setActivePigId(data.active_pig_id || "white_basic")
-        setUnlockedPigs(data.pigs?.map((p: any) => p.id) || ["white_basic"])
-        setReferralBonus(data.referral_bonus || 0)
-        setReferralsCount(data.referrals_count || 0)
-        setCarrotsPerClickLevel(data.carrots_per_click_level || 1)
-        setMaxEnergyLevel(data.max_energy_level || 1)
-        setPlayerMiners(data.miners || [])
-        setEnergy(getCurrentMaxEnergy(data.max_energy_level || 1))
-
-        if (data.offlineIncome && data.offlineIncome > 0.001) {
-          setOfflineIncome(data.offlineIncome)
-          setShowOfflineModal(true)
-        }
-      }
-    } catch (e) {
-      console.error("[v0] Failed to sync with server:", e)
-    }
+    // Game runs on localStorage in v0 preview
+    // Supabase sync happens on production deployment
   }
 
-  const savePlayerData = useCallback(async () => {
-    if (!tg.user || isSaving) return
-    setIsSaving(true)
-    try {
-      await fetch("/api/player/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: tg.user.id,
-          username: tg.user.username,
-          carrots,
-          guineaTokens,
-          telegramStars,
-          level,
-          xp,
-          totalClicks,
-          activePigId,
-          pigs: unlockedPigs.map((id) => ({ id, rarity: getPigById(id)?.rarity })),
-          carrotsPerClickLevel,
-          maxEnergyLevel,
-        }),
-      })
-    } catch (e) {
-      console.error("[v0] Failed to save:", e)
-    } finally {
-      setIsSaving(false)
-    }
-  }, [carrots, guineaTokens, telegramStars, level, xp, totalClicks, activePigId, unlockedPigs, playerMiners, carrotsPerClickLevel, maxEnergyLevel, isSaving, tg.user])
+  // Disabled - game uses localStorage for persistence in v0 preview
+  // const savePlayerData = useCallback(async () => { ... }, [...])
 
   const handleReferral = async (referrerId: number) => {
     if (!tg.user || tg.user.id === referrerId) return
