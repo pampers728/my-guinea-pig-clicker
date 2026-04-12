@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Progress } from "@/components/ui/progress"
 import {
   Copy,
@@ -900,6 +900,7 @@ export default function Home() {
         <DialogContent className="bg-black/90 backdrop-blur-md border-purple-500/30 text-white max-w-md max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">{t("pigs.collection")}</DialogTitle>
+            <DialogDescription className="text-gray-400">Select your active guinea pig</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-3 gap-3 p-2">
             {PIGS.map((pig) => {
@@ -945,6 +946,7 @@ export default function Home() {
         <DialogContent className="bg-black/90 backdrop-blur-md border-purple-500/30 text-white max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">{t("settings.language")}</DialogTitle>
+            <DialogDescription className="text-gray-400">Choose your preferred language</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-2">
             {[
@@ -978,6 +980,7 @@ export default function Home() {
         <DialogContent className="bg-black/90 backdrop-blur-md border-orange-500/30 text-white max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">Обмен морковок на GT</DialogTitle>
+            <DialogDescription className="text-gray-400">Exchange carrots for Guinea Tokens</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 p-2">
             <p className="text-center text-gray-300">250,000 🥕 = 1 GT</p>
@@ -1001,6 +1004,7 @@ export default function Home() {
         <DialogContent className="bg-black/90 backdrop-blur-md border-green-500/30 text-white max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-center">Пока вас не было...</DialogTitle>
+            <DialogDescription className="text-gray-400 text-center">Your miners worked while you were away</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 p-2 text-center">
             <p className="text-gray-300">Ваши майнеры поработали и заработали:</p>
