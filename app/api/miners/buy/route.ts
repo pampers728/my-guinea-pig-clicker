@@ -1,6 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@supabaseAdmin/supabaseAdmin-js"
 import { getMinerCost, MINERS } from "@/lib/pigs"
+
+const supabaseAdminAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,7 +21,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get player data
-    const { data: player, error: fetchError } = await supabase
+    const { data: player, error: fetchError } = await supabaseAdmin
       .from("players")
       .select("guinea_tokens, miners(*)")
       .eq("user_id", userId)
@@ -41,7 +46,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Deduct GT
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from("players")
       .update({
         guinea_tokens: player.guinea_tokens - cost,
@@ -55,7 +60,7 @@ export async function POST(req: NextRequest) {
 
     if (existingMiner) {
       // Upgrade existing miner
-      const { error: upgradeError } = await supabase
+      const { error: upgradeError } = await supabaseAdmin
         .from("miners")
         .update({ level: nextLevel })
         .eq("id", existingMiner.id)
@@ -65,7 +70,7 @@ export async function POST(req: NextRequest) {
       }
     } else {
       // Buy new miner
-      const { error: insertError } = await supabase.from("miners").insert({
+      const { error: insertError } = await supabaseAdmin.from("miners").insert({
         user_id: userId,
         miner_type: minerType,
         level: 1,
