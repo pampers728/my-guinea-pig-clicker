@@ -3,7 +3,9 @@
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+
+const AD_URL = "https://www.profitablecpmratenetwork.com/p0h1yedy?key=557943eaa83bcaa2d505bcac1a5a9005"
 
 // Prize definitions
 const PRIZES = [
@@ -102,9 +104,24 @@ export default function FortuneWheel({ spinsLeft, onSpin, onPrize, canSpin }: Fo
     ctx.fillText("SPIN", center, center)
   }, [])
 
+  const [adWatched, setAdWatched] = useState(false)
+
+  const watchAdAndSpin = () => {
+    window.open(AD_URL, "_blank")
+    // Mark ad as watched after delay (simulating ad completion)
+    setTimeout(() => {
+      setAdWatched(true)
+    }, 3000)
+  }
+
   const spin = () => {
     if (spinning || !canSpin || spinsLeft <= 0) return
+    if (!adWatched) {
+      watchAdAndSpin()
+      return
+    }
 
+    setAdWatched(false) // Reset for next spin
     setSpinning(true)
     onSpin()
 
@@ -191,7 +208,7 @@ export default function FortuneWheel({ spinsLeft, onSpin, onPrize, canSpin }: Fo
         disabled={spinning || !canSpin || spinsLeft <= 0}
         className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-black font-bold text-lg px-8 py-3 h-auto disabled:opacity-40 shadow-lg"
       >
-        {spinning ? "Krutitsya..." : spinsLeft <= 0 ? "Popytki zakonchilis'" : "Krutit' za reklamu"}
+        {spinning ? "Крутится..." : spinsLeft <= 0 ? "Попытки закончились" : adWatched ? "Крутить!" : "Смотреть рекламу"}
       </Button>
 
       {/* Result dialog */}
