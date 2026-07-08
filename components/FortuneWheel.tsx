@@ -213,11 +213,12 @@ export default function FortuneWheel({ spinsLeft, onSpin, onPrize, canSpin }: Fo
 
       {/* Result dialog */}
       <Dialog open={showResult} onOpenChange={setShowResult}>
-        <DialogContent className="bg-black/95 backdrop-blur-md border-yellow-500/50 text-white max-w-xs">
+        <DialogContent onOpenChange={setShowResult} className="bg-black/95 backdrop-blur-md border-yellow-500/50 text-white max-w-xs">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-center text-yellow-400">
-              Pozdravlyaem!
+              Поздравляем!
             </DialogTitle>
+            <DialogDescription className="sr-only">Результат прокрутки колеса фортуны</DialogDescription>
           </DialogHeader>
           <div className="text-center space-y-3 py-4">
             <div className="text-5xl">{lastPrize?.prize.type === "carrots" ? "🥕" : lastPrize?.prize.type === "energy" ? "⚡" : lastPrize?.prize.type === "gt" ? "💰" : lastPrize?.prize.type === "autotap" ? "🤖" : "🚀"}</div>
