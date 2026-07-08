@@ -387,7 +387,7 @@ export default function Home() {
 
       {/* Pig modal */}
       <Dialog open={showPigsModal} onOpenChange={setShowPigsModal}>
-        <DialogContent className="bg-black/90 backdrop-blur-md border-purple-500/30 text-white max-w-md max-h-[80vh] overflow-y-auto">
+        <DialogContent onOpenChange={setShowPigsModal} className="bg-black/90 backdrop-blur-md border-purple-500/30 text-white max-w-md max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">Коллекция свинок</DialogTitle>
             <DialogDescription className="text-gray-400">Выберите активную морскую свинку</DialogDescription>
@@ -411,7 +411,7 @@ export default function Home() {
 
       {/* Language modal */}
       <Dialog open={showLanguageModal} onOpenChange={setShowLanguageModal}>
-        <DialogContent className="bg-black/90 backdrop-blur-md border-purple-500/30 text-white max-w-sm">
+        <DialogContent onOpenChange={setShowLanguageModal} className="bg-black/90 backdrop-blur-md border-purple-500/30 text-white max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">Язык</DialogTitle>
             <DialogDescription className="text-gray-400">Choose your preferred language</DialogDescription>
