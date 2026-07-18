@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@supabaseAdmin/supabaseAdmin-js"
+import { createClient } from "@supabase/supabase-js"
 import { getMinerCost, MINERS } from "@/lib/pigs"
 
-const supabaseAdminAdmin = createClient(
+const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
