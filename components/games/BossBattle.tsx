@@ -170,7 +170,7 @@ export default function BossBattle({ onClose, onVictory, onDefeat }: BossBattleP
 
       {/* Continue Dialog */}
       <Dialog open={showContinue} onOpenChange={setShowContinue}>
-        <DialogContent className="bg-black/95 backdrop-blur-md border-red-500/50 text-white max-w-sm">
+        <DialogContent onOpenChange={setShowContinue} className="bg-black/95 backdrop-blur-md border-red-500/50 text-white max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-center text-red-400">
               Время вышло!

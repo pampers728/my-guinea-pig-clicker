@@ -173,7 +173,7 @@ export default function CatchCarrot({ onClose, onReward }: CatchCarrotProps) {
 
       {/* Result Dialog */}
       <Dialog open={showResult} onOpenChange={setShowResult}>
-        <DialogContent className="bg-black/95 backdrop-blur-md border-yellow-500/50 text-white max-w-sm">
+        <DialogContent onOpenChange={setShowResult} className="bg-black/95 backdrop-blur-md border-yellow-500/50 text-white max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-center">
               {score >= 50 ? "Отлично!" : "Игра окончена"}

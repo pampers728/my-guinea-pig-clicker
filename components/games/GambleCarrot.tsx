@@ -170,7 +170,7 @@ export default function GambleCarrot({ carrots, freeGambleUsed, onGamble, onUseF
 
       {/* Result Dialog */}
       <Dialog open={showResult} onOpenChange={setShowResult}>
-        <DialogContent className="bg-black/95 backdrop-blur-md border-yellow-500/50 text-white max-w-xs">
+        <DialogContent onOpenChange={setShowResult} className="bg-black/95 backdrop-blur-md border-yellow-500/50 text-white max-w-xs">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-center">
               {result?.multiplier === 0 ? "Проигрыш!" : "Победа!"}
