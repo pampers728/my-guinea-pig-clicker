@@ -445,6 +445,12 @@ export default function Home() {
 
   const loadLeaderboard = async (period: "daily" | "weekly" | "alltime") => {
     try {
+      // First push current player score so they appear in the board
+      fetch("/api/leaderboard/alltime", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, username: tg.user?.username || tg.user?.first_name || "Player", carrots, level }),
+      }).catch(() => {})
       const res = await fetch(`/api/leaderboard/${period}`)
       const data = await res.json()
       setLeaderboard(data.data || [])
@@ -571,6 +577,11 @@ export default function Home() {
             onWheelPrize={handleWheelPrize}
             onClaimCarrots={claimCarrots}
             onClaimEnergy={claimEnergy}
+            onWheelAdGranted={() => {
+              const n = wheelSpinsLeft + 1
+              setWheelSpinsLeft(n)
+              localStorage.setItem(`gpc_spins_${userId}`, String(n))
+            }}
           />
         )}
 

@@ -1,53 +1,92 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+export const runtime = "nodejs"
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ period: string }> }) {
+function makeAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return null
+  return createClient(url, key)
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ period: string }> },
+) {
+  const { period } = await params
+
+  if (!["daily", "weekly", "alltime"].includes(period)) {
+    return NextResponse.json({ success: false, error: "Invalid period" }, { status: 400 })
+  }
+
+  const supabaseAdmin = makeAdmin()
+  if (!supabaseAdmin) {
+    return NextResponse.json({ success: true, data: [] })
+  }
+
   try {
-    const { period } = await params
-
-    if (!["daily", "weekly", "alltime"].includes(period)) {
-      return NextResponse.json({ success: false, error: "Invalid period" }, { status: 400 })
-    }
-
+    // Use last_online column (actual column name in players table)
     let query = supabaseAdmin
       .from("players")
-      .select("user_id, username, score, level, updated_at")
-      .order("score", { ascending: false })
-      .limit(100)
+      .select("user_id, username, carrots, level, last_online")
+      .order("carrots", { ascending: false })
+      .limit(50)
 
     if (period === "daily") {
-      const oneDayAgo = new Date()
-      oneDayAgo.setDate(oneDayAgo.getDate() - 1)
-      query = query.gte("updated_at", oneDayAgo.toISOString())
+      const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+      query = query.gte("last_online", cutoff)
     } else if (period === "weekly") {
-      const oneWeekAgo = new Date()
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
-      query = query.gte("updated_at", oneWeekAgo.toISOString())
+      const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      query = query.gte("last_online", cutoff)
     }
 
     const { data, error } = await query
 
     if (error) {
-      console.error("[v0] Leaderboard Supabase error:", error)
-      return NextResponse.json({ success: true, data: [] }, { status: 200 })
+      console.error("[v0] Leaderboard error:", error.message)
+      return NextResponse.json({ success: true, data: [] })
     }
 
-    const formattedData = (data || []).map((user, index) => ({
+    const formattedData = (data ?? []).map((user, index) => ({
       rank: index + 1,
-      username: user.username || `Player`,
-      score: user.score || 0,
+      username: user.username || "Player",
+      score: user.carrots || 0,
       level: user.level || 1,
-      avatar: "🐹",
     }))
 
     return NextResponse.json({ success: true, data: formattedData })
-  } catch (error) {
-    console.error("[v0] Leaderboard error:", error)
-    return NextResponse.json({ success: true, data: [] }, { status: 200 })
+  } catch (err) {
+    console.error("[v0] Leaderboard exception:", err)
+    return NextResponse.json({ success: true, data: [] })
+  }
+}
+
+// Save current player score so they appear in leaderboard
+export async function POST(request: NextRequest) {
+  try {
+    const { userId, username, carrots, level } = await request.json()
+    if (!userId) return NextResponse.json({ ok: false })
+
+    const supabaseAdmin = makeAdmin()
+    if (!supabaseAdmin) return NextResponse.json({ ok: true })
+
+    await supabaseAdmin
+      .from("players")
+      .upsert(
+        {
+          user_id: String(userId),
+          username: username || "Player",
+          carrots: carrots || 0,
+          level: level || 1,
+          last_online: new Date().toISOString(),
+        },
+        { onConflict: "user_id" },
+      )
+
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    console.error("[v0] Leaderboard save error:", err)
+    return NextResponse.json({ ok: true })
   }
 }

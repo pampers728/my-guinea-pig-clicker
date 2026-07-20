@@ -1,10 +1,10 @@
 "use client"
 
+import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import FortuneWheel from "@/components/FortuneWheel"
-
-const AD_URL = "https://www.profitablecpmratenetwork.com/p0h1yedy?key=557943eaa83bcaa2d505bcac1a5a9005"
+import AdModal, { type AdRewardType } from "@/components/AdModal"
 
 interface BonusesTabProps {
   wheelSpinsLeft: number
@@ -18,18 +18,28 @@ interface BonusesTabProps {
   onWheelPrize: (prize: any, value: number) => void
   onClaimCarrots: () => void
   onClaimEnergy: () => void
+  onWheelAdGranted: () => void
 }
 
 export default function BonusesTab({
   wheelSpinsLeft, carrotRewardClaimed, energyRewardClaimed,
   autoTapActive, boosterActive, autoTapEndTime, boosterEndTime,
-  onWheelSpin, onWheelPrize, onClaimCarrots, onClaimEnergy,
+  onWheelSpin, onWheelPrize, onClaimCarrots, onClaimEnergy, onWheelAdGranted,
 }: BonusesTabProps) {
-  const handleAdThenClaim = (callback: () => void, claimed: boolean) => {
-    if (claimed) return
-    // Open ad first, then claim after short delay
-    window.open(AD_URL, "_blank")
-    setTimeout(callback, 3000)
+  const [adOpen, setAdOpen] = useState(false)
+  const [pendingReward, setPendingReward] = useState<AdRewardType>("carrots")
+  const [pendingLabel, setPendingLabel] = useState("")
+  const [pendingCallback, setPendingCallback] = useState<(() => void) | null>(null)
+
+  const openAd = (type: AdRewardType, label: string, callback: () => void) => {
+    setPendingReward(type)
+    setPendingLabel(label)
+    setPendingCallback(() => callback)
+    setAdOpen(true)
+  }
+
+  const handleRewardGranted = () => {
+    pendingCallback?.()
   }
 
   return (
@@ -40,13 +50,11 @@ export default function BonusesTab({
           <div className="space-y-1">
             {autoTapActive && (
               <div className="flex items-center gap-2 text-xs text-green-400">
-                <span>🤖</span>
                 <span>Авто-тап активен ({Math.max(0, Math.ceil((autoTapEndTime - Date.now()) / 60000))} мин)</span>
               </div>
             )}
             {boosterActive && (
               <div className="flex items-center gap-2 text-xs text-pink-400">
-                <span>🚀</span>
                 <span>x2 морковки ({Math.max(0, Math.ceil((boosterEndTime - Date.now()) / 60000))} мин)</span>
               </div>
             )}
@@ -55,12 +63,21 @@ export default function BonusesTab({
       )}
 
       {/* Fortune Wheel */}
-      <FortuneWheel
-        spinsLeft={wheelSpinsLeft}
-        onSpin={onWheelSpin}
-        onPrize={onWheelPrize}
-        canSpin={wheelSpinsLeft > 0}
-      />
+      <div className="space-y-2">
+        <FortuneWheel
+          spinsLeft={wheelSpinsLeft}
+          onSpin={onWheelSpin}
+          onPrize={onWheelPrize}
+          canSpin={wheelSpinsLeft > 0}
+        />
+        {/* Extra spin via ad */}
+        <button
+          onClick={() => openAd("wheel_spin", "+1 попытка прокрутки колеса", onWheelAdGranted)}
+          className="w-full text-xs text-purple-300 underline underline-offset-2 text-center py-1"
+        >
+          Получить ещё попытку за рекламу
+        </button>
+      </div>
 
       {/* Ad rewards */}
       <div className="space-y-3 mt-2">
@@ -76,9 +93,9 @@ export default function BonusesTab({
               </div>
             </div>
             <Button
-              onClick={() => handleAdThenClaim(onClaimCarrots, carrotRewardClaimed)}
+              onClick={() => !carrotRewardClaimed && openAd("carrots", "+2 000 морковок", onClaimCarrots)}
               disabled={carrotRewardClaimed}
-              className={`h-10 px-4 ${carrotRewardClaimed ? "bg-gray-600" : "bg-orange-600 hover:bg-orange-700"}`}
+              className={`h-10 px-4 ${carrotRewardClaimed ? "bg-gray-600 cursor-not-allowed" : "bg-orange-600 hover:bg-orange-700"}`}
             >
               {carrotRewardClaimed ? "Получено" : "Смотреть"}
             </Button>
@@ -95,15 +112,23 @@ export default function BonusesTab({
               </div>
             </div>
             <Button
-              onClick={() => handleAdThenClaim(onClaimEnergy, energyRewardClaimed)}
+              onClick={() => !energyRewardClaimed && openAd("energy", "+1 000 энергии", onClaimEnergy)}
               disabled={energyRewardClaimed}
-              className={`h-10 px-4 ${energyRewardClaimed ? "bg-gray-600" : "bg-green-600 hover:bg-green-700"}`}
+              className={`h-10 px-4 ${energyRewardClaimed ? "bg-gray-600 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"}`}
             >
               {energyRewardClaimed ? "Получено" : "Смотреть"}
             </Button>
           </div>
         </Card>
       </div>
+
+      <AdModal
+        open={adOpen}
+        rewardType={pendingReward}
+        rewardLabel={pendingLabel}
+        onClose={() => setAdOpen(false)}
+        onRewardGranted={handleRewardGranted}
+      />
     </div>
   )
 }
