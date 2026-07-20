@@ -485,7 +485,7 @@ export default function Home() {
   const freeChestMinutes = Math.ceil(Math.max(0, freeChestNextTime - Date.now()) / 60000)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white pb-24">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white pb-36">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-black/40 backdrop-blur-md border-b border-purple-500/30 p-2">
         <div className="container mx-auto flex items-center justify-between gap-2">
@@ -638,19 +638,28 @@ export default function Home() {
         )}
       </div>
 
-      {/* Bottom nav */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black/60 backdrop-blur-md border-t border-purple-500/30">
-        <div className="overflow-x-auto">
-          <div className="flex bg-gray-900/50 p-2 max-w-2xl mx-auto gap-1">
-            {TABS.map((tab) => (
-              <button key={tab.id}
-                onClick={() => { setActiveTab(tab.id); if (tab.id === "leaderboard") loadLeaderboard(leaderboardPeriod) }}
-                className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg transition-colors text-[9px] shrink-0 min-w-[48px] ${activeTab === tab.id ? "bg-purple-600 text-white" : "text-gray-400 hover:text-white"}`}>
-                {tab.icon}
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </div>
+      {/* Bottom nav — two rows of 5 */}
+      <div className="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-md border-t border-purple-500/30">
+        <div className="max-w-2xl mx-auto px-1 py-1 space-y-0.5">
+          {[TABS.slice(0, 5), TABS.slice(5)].map((row, rowIdx) => (
+            <div key={rowIdx} className="flex justify-around">
+              {row.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveTab(tab.id)
+                    if (tab.id === "leaderboard") loadLeaderboard(leaderboardPeriod)
+                  }}
+                  className={`flex flex-col items-center gap-0.5 flex-1 py-1.5 rounded-lg transition-colors text-[9px] ${
+                    activeTab === tab.id ? "bg-purple-600 text-white" : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  {tab.icon}
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
+          ))}
         </div>
       </div>
 
