@@ -22,7 +22,7 @@ interface PlinkoProps {
 export default function Plinko({ carrots, onClose, onResult }: PlinkoProps) {
   const [bet, setBet] = useState(100)
   const [dropping, setDropping] = useState(false)
-  const [ballPos, setBallPos] = useState<number | null>(null)
+  const [ballState, setBallState] = useState<{ x: number; y: number; rotation: number } | null>(null)
   const [landedSlot, setLandedSlot] = useState<number | null>(null)
   const [lastResult, setLastResult] = useState<{ multiplier: number; win: number } | null>(null)
   const [freeDropUsed, setFreeDropUsed] = useState(false)
@@ -36,20 +36,27 @@ export default function Plinko({ carrots, onClose, onResult }: PlinkoProps) {
     setLandedSlot(null)
     setLastResult(null)
 
-    // Simulate ball path
-    let position = 5 // start center
-    const steps = 8
+    // Build a physical-looking trajectory: each bounce moves down and left/right.
+    const path = [{ x: 50, y: 7, rotation: 0 }]
+    let x = 50
+    const rows = 9
+    for (let row = 0; row < rows; row++) {
+      const direction = Math.random() > 0.5 ? 1 : -1
+      const drift = 5 + Math.random() * 8
+      x = Math.max(8, Math.min(92, x + direction * drift))
+      path.push({ x, y: 14 + row * 9.2, rotation: (row % 2 ? -1 : 1) * (10 + Math.random() * 18) })
+    }
+
     let step = 0
+    setBallState(path[0])
+    const animate = window.setInterval(() => {
+      const current = path[step]
+      setBallState(current)
+      step += 1
 
-    const animate = setInterval(() => {
-      step++
-      position += Math.random() > 0.5 ? 1 : -1
-      position = Math.max(0, Math.min(10, position))
-      setBallPos(position)
-
-      if (step >= steps) {
-        clearInterval(animate)
-        const finalSlot = Math.round(position)
+      if (step >= path.length) {
+        window.clearInterval(animate)
+        const finalSlot = Math.max(0, Math.min(10, Math.round((current.x - 8) / 8.4)))
         setLandedSlot(finalSlot)
         const mult = MULTIPLIERS[finalSlot]
         const win = Math.floor(bet * mult)
@@ -58,7 +65,7 @@ export default function Plinko({ carrots, onClose, onResult }: PlinkoProps) {
         setDropping(false)
         if (!freeDropUsed) setFreeDropUsed(true)
       }
-    }, 250)
+    }, 220)
   }
 
   const watchAdAndDrop = () => {
@@ -97,11 +104,17 @@ export default function Plinko({ carrots, onClose, onResult }: PlinkoProps) {
         {/* Pegs visual */}
         <div className="relative w-full max-w-xs h-48 bg-black/30 rounded-xl border border-purple-500/20 overflow-hidden flex items-center justify-center">
           {/* Ball */}
-          {dropping && ballPos !== null && (
+          {dropping && ballState !== null && (
             <div
-              className="absolute top-4 w-6 h-6 rounded-full bg-orange-400 shadow-lg shadow-orange-500/50 transition-all duration-200 game-pulse-ring"
-              style={{ left: `${(ballPos / 10) * 85 + 7}%` }}
-            />
+              className="absolute w-6 h-6 rounded-full bg-orange-300 shadow-[0_0_18px_rgba(251,146,60,0.9)] transition-all duration-200 ease-out"
+              style={{
+                left: `${ballState.x}%`,
+                top: `${ballState.y}%`,
+                transform: `translate(-50%, -50%) rotate(${ballState.rotation}deg)`,
+              }}
+            >
+              <span className="absolute inset-1 rounded-full bg-yellow-100/80" />
+            </div>
           )}
           {/* Pegs */}
           {[...Array(5)].map((_, row) => (
