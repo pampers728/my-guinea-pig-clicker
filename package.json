@@ -52,6 +52,7 @@
     "input-otp": "1.4.1",
     "kerberos": "latest",
     "lucide-react": "^0.454.0",
+    "mammoth": "^1.12.2",
     "mongodb": "7.0.0",
     "mongodb-client-encryption": "latest",
     "next": "15.5.9",
