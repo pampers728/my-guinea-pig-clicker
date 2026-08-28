@@ -179,7 +179,7 @@ export default function GambleCarrot({ carrots, freeGambleUsed, onGamble, onUseF
               {result?.label}
             </DialogDescription>
           </DialogHeader>
-          <div className="text-center space-y-3 py-4">
+          <div className="text-center space-y-3 py-4 game-result-pop">
             <div className="text-6xl">
               {result?.multiplier === 0 ? "😢" : result?.multiplier === 5 ? "🎉" : "🎊"}
             </div>

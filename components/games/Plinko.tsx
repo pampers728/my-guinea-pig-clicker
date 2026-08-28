@@ -99,7 +99,7 @@ export default function Plinko({ carrots, onClose, onResult }: PlinkoProps) {
           {/* Ball */}
           {dropping && ballPos !== null && (
             <div
-              className="absolute top-4 w-6 h-6 rounded-full bg-orange-400 shadow-lg shadow-orange-500/50 transition-all duration-200"
+              className="absolute top-4 w-6 h-6 rounded-full bg-orange-400 shadow-lg shadow-orange-500/50 transition-all duration-200 game-pulse-ring"
               style={{ left: `${(ballPos / 10) * 85 + 7}%` }}
             />
           )}

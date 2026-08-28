@@ -158,7 +158,7 @@ export default function CatchCarrot({ onClose, onReward }: CatchCarrotProps) {
               <button
                 key={carrot.id}
                 onClick={() => catchCarrot(carrot.id)}
-                className="absolute text-4xl transform -translate-x-1/2 -translate-y-1/2 hover:scale-125 transition-transform active:scale-90 cursor-pointer select-none"
+                className="absolute text-4xl transform -translate-x-1/2 -translate-y-1/2 hover:scale-125 transition-transform active:scale-90 cursor-pointer select-none game-carrot-fall drop-shadow-[0_0_10px_rgba(251,146,60,0.65)]"
                 style={{
                   left: `${carrot.x}%`,
                   top: `${carrot.y}%`,

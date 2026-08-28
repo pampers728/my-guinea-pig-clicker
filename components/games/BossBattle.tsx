@@ -145,7 +145,7 @@ export default function BossBattle({ onClose, onVictory, onDefeat }: BossBattleP
         {(gameState === "fighting" || gameState === "continued") && (
           <div className="text-center select-none">
             <div 
-              className={`text-[150px] leading-none transition-transform cursor-pointer active:scale-90 ${bossShake ? "animate-pulse scale-95" : ""}`}
+              className={`text-[150px] leading-none transition-transform cursor-pointer active:scale-90 drop-shadow-[0_0_22px_rgba(248,113,113,0.45)] ${bossShake ? "game-boss-hit" : ""}`}
             >
               🐹
             </div>
