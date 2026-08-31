@@ -49,6 +49,7 @@ export default function Home() {
   const [carrots, setCarrots] = useState(0)
   const [guineaTokens, setGuineaTokens] = useState(0)
   const [telegramStars, setTelegramStars] = useState(0)
+  const [miningScore, setMiningScore] = useState(0)
   const [energy, setEnergy] = useState(1000)
   const [totalClicks, setTotalClicks] = useState(0)
   const [totalCarrotsEarned, setTotalCarrotsEarned] = useState(0)
@@ -113,6 +114,7 @@ export default function Home() {
   const [isPurchasing, setIsPurchasing] = useState(false)
   const [showPigsModal, setShowPigsModal] = useState(false)
   const [showLanguageModal, setShowLanguageModal] = useState(false)
+  const [purchaseMessage, setPurchaseMessage] = useState("")
 
   const maxEnergy = getCurrentMaxEnergy(maxEnergyLevel)
   const carrotsPerClick = getCurrentCarrotsPerClick(carrotsPerClickLevel)
@@ -202,7 +204,7 @@ export default function Home() {
   useEffect(() => {
     if (isLoading) return
     const data = {
-      carrots, guineaTokens, telegramStars, level, xp, totalClicks, totalCarrotsEarned,
+      carrots, guineaTokens, telegramStars, miningScore, level, xp, totalClicks, totalCarrotsEarned,
       activePigId, unlockedPigs, playerMiners, carrotsPerClickLevel, maxEnergyLevel,
       referralBonus, referralsCount, streakDay, lastDailyClaimDate,
       freeChestNextTime, bossNextTime, bossesDefeated, achievements,
@@ -256,6 +258,7 @@ export default function Home() {
         setCarrots(d.carrots || 0)
         setGuineaTokens(d.guineaTokens || 0)
         setTelegramStars(d.telegramStars || 0)
+        setMiningScore(d.miningScore || 0)
         setLevel(d.level || 1)
         setXP(d.xp || 0)
         setTotalClicks(d.totalClicks || 0)
@@ -409,6 +412,7 @@ export default function Home() {
     const gt = Math.floor(carrots / CARROT_TO_GT_RATE)
     setCarrots(p => p - gt * CARROT_TO_GT_RATE)
     setGuineaTokens(p => p + gt)
+    setPurchaseMessage(`Обмен выполнен: +${gt} GT и +${(gt * 0.1).toFixed(1)} MS`)
   }
 
   const buyOrUpgradeMiner = async (minerType: number) => {
@@ -423,6 +427,13 @@ export default function Home() {
       : [...playerMiners, { miner_type: minerType, level: 1 }]
     )
     try { await fetch("/api/miners/buy", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId, minerType, newLevel: currentLevel + 1 }) }) } catch {}
+  }
+
+  const spendGT = (amount: number, title: string) => {
+    if (guineaTokens < amount) return
+    setGuineaTokens((current) => current - amount)
+    setPurchaseMessage(`${title} добавлен в инвентарь`)
+    window.setTimeout(() => setPurchaseMessage(""), 2500)
   }
 
   const buyGTWithStars = async (gtAmount: number) => {
@@ -495,6 +506,9 @@ export default function Home() {
               <span className="font-bold text-yellow-400">{guineaTokens.toFixed(2)} GT</span>
             </div>
             <div className="flex items-center gap-1 bg-black/30 rounded-full px-2 py-1 text-xs">
+              <span className="font-bold text-cyan-300">{miningScore.toFixed(1)} MS</span>
+            </div>
+            <div className="flex items-center gap-1 bg-black/30 rounded-full px-2 py-1 text-xs">
               <span className="font-bold text-gray-300">Lvl {level}</span>
               <span className="text-gray-400"> {xp}/{xpNeeded} XP</span>
             </div>
@@ -522,6 +536,7 @@ export default function Home() {
       </div>
 
       <div className="container mx-auto px-3 py-4 max-w-2xl">
+        {purchaseMessage && <div className="mb-3 rounded-xl border border-green-500/30 bg-green-900/30 px-3 py-2 text-xs text-green-300 text-center" role="status">{purchaseMessage}</div>}
 
         {activeTab === "main" && (
           <div className="space-y-4">
@@ -630,7 +645,7 @@ export default function Home() {
             onShare={() => tg.isAvailable && window.open(`https://t.me/share/url?url=${referralLink}&text=Join%20Guinea%20Pig%20Clicker!`, "_blank")} />
         )}
 
-        {activeTab === "shop" && <ShopTab isPurchasing={isPurchasing} onBuyGT={buyGTWithStars} />}
+        {activeTab === "shop" && <ShopTab isPurchasing={isPurchasing} onBuyGT={buyGTWithStars} guineaTokens={guineaTokens} telegramStars={telegramStars} onSpendGT={spendGT} />}
 
         {activeTab === "leaderboard" && (
           <LeaderboardTab leaderboard={leaderboard} leaderboardPeriod={leaderboardPeriod}
