@@ -2,7 +2,6 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
-import Script from "next/script"
 import { TelegramProvider } from "@/components/TelegramProvider"
 import "./globals.css"
 
@@ -39,9 +38,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
-      </head>
       <body className={`font-sans antialiased`} suppressHydrationWarning>
         <TelegramProvider>{children}</TelegramProvider>
         <Analytics />

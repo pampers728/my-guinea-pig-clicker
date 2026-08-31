@@ -32,7 +32,23 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isChecking, setIsChecking] = useState(true)
 
   useEffect(() => {
-    const checkTelegram = () => {
+    const isTelegramClient = /Telegram/i.test(navigator.userAgent)
+    if (!isTelegramClient) {
+      setIsChecking(false)
+      return
+    }
+
+    const script = document.createElement("script")
+    script.src = "https://telegram.org/js/telegram-web-app.js"
+    script.async = true
+    script.onload = () => checkTelegram()
+    script.onerror = () => {
+      console.warn("[v0] Telegram WebApp script unavailable")
+      setIsChecking(false)
+    }
+    document.head.appendChild(script)
+
+    function checkTelegram() {
       console.log("[v0] Checking Telegram WebApp availability")
 
       if (typeof window === "undefined") {
