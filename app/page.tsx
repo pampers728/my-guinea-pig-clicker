@@ -25,6 +25,7 @@ import QuestsTab, { type Quest } from "@/components/tabs/QuestsTab"
 import AchievementsTab, { ALL_ACHIEVEMENTS, type Achievement } from "@/components/tabs/AchievementsTab"
 import DailyRewards from "@/components/DailyRewards"
 import ChestOpener, { ChestCard, type ChestType } from "@/components/ChestOpener"
+import EcosystemTab from "@/components/tabs/EcosystemTab"
 
 interface PlayerMiner { miner_type: number; level: number }
 
@@ -49,6 +50,7 @@ export default function Home() {
   const [carrots, setCarrots] = useState(0)
   const [guineaTokens, setGuineaTokens] = useState(0)
   const [telegramStars, setTelegramStars] = useState(0)
+  const [miningScore, setMiningScore] = useState(0)
   const [energy, setEnergy] = useState(1000)
   const [totalClicks, setTotalClicks] = useState(0)
   const [totalCarrotsEarned, setTotalCarrotsEarned] = useState(0)
@@ -113,6 +115,7 @@ export default function Home() {
   const [isPurchasing, setIsPurchasing] = useState(false)
   const [showPigsModal, setShowPigsModal] = useState(false)
   const [showLanguageModal, setShowLanguageModal] = useState(false)
+  const [gameMessage, setGameMessage] = useState("")
 
   const maxEnergy = getCurrentMaxEnergy(maxEnergyLevel)
   const carrotsPerClick = getCurrentCarrotsPerClick(carrotsPerClickLevel)
@@ -187,7 +190,12 @@ export default function Home() {
   // Miners income
   useEffect(() => {
     if (!playerMiners.length) return
-    const interval = setInterval(() => { if (totalIncomePerHour > 0) setGuineaTokens(p => p + totalIncomePerHour / 3600) }, 1000)
+    const interval = setInterval(() => {
+      if (totalIncomePerHour > 0) {
+        setGuineaTokens(p => p + totalIncomePerHour / 3600)
+        setMiningScore(p => p + (totalIncomePerHour / 3600) * 0.001)
+      }
+    }, 1000)
     return () => clearInterval(interval)
   }, [playerMiners, totalIncomePerHour])
 
@@ -202,7 +210,7 @@ export default function Home() {
   useEffect(() => {
     if (isLoading) return
     const data = {
-      carrots, guineaTokens, telegramStars, level, xp, totalClicks, totalCarrotsEarned,
+      carrots, guineaTokens, telegramStars, miningScore, level, xp, totalClicks, totalCarrotsEarned,
       activePigId, unlockedPigs, playerMiners, carrotsPerClickLevel, maxEnergyLevel,
       referralBonus, referralsCount, streakDay, lastDailyClaimDate,
       freeChestNextTime, bossNextTime, bossesDefeated, achievements,
@@ -256,6 +264,7 @@ export default function Home() {
         setCarrots(d.carrots || 0)
         setGuineaTokens(d.guineaTokens || 0)
         setTelegramStars(d.telegramStars || 0)
+        setMiningScore(d.miningScore || 0)
         setLevel(d.level || 1)
         setXP(d.xp || 0)
         setTotalClicks(d.totalClicks || 0)
@@ -378,6 +387,12 @@ export default function Home() {
     setGamesPlayed(p => p + 1)
   }
 
+  const handleEcosystemGain = (carrotDelta: number, msDelta: number) => {
+    if (carrotDelta > 0) setTotalCarrotsEarned(p => p + carrotDelta)
+    setCarrots(p => Math.max(0, p + carrotDelta))
+    if (msDelta > 0) setMiningScore(p => p + msDelta)
+  }
+
   const handleCarrotGameReward = (multiplier: number, durationMin: number) => {
     setBoosterActive(true)
     setBoosterEndTime(Date.now() + durationMin * 60000)
@@ -480,6 +495,7 @@ export default function Home() {
     { id: "friends", icon: <Users className="w-5 h-5" />, label: "Друзья" },
     { id: "shop", icon: <ShoppingBag className="w-5 h-5" />, label: "Магазин" },
     { id: "leaderboard", icon: <Crown className="w-5 h-5" />, label: "Топ" },
+    { id: "ecosystem", icon: <HomeIcon className="w-5 h-5" />, label: "Мир" },
   ]
 
   const freeChestMinutes = Math.ceil(Math.max(0, freeChestNextTime - Date.now()) / 60000)
@@ -522,6 +538,7 @@ export default function Home() {
       </div>
 
       <div className="container mx-auto px-3 py-4 max-w-2xl">
+        {gameMessage && <div className="mb-3 rounded-xl border border-emerald-300/30 bg-emerald-300/10 px-3 py-2 text-xs text-emerald-100">{gameMessage}</div>}
 
         {activeTab === "main" && (
           <div className="space-y-4">
@@ -635,6 +652,15 @@ export default function Home() {
         {activeTab === "leaderboard" && (
           <LeaderboardTab leaderboard={leaderboard} leaderboardPeriod={leaderboardPeriod}
             onPeriodChange={(p) => { setLeaderboardPeriod(p); loadLeaderboard(p) }} />
+        )}
+
+        {activeTab === "ecosystem" && (
+          <EcosystemTab
+            ms={miningScore}
+            carrots={carrots}
+            onGain={handleEcosystemGain}
+            onGift={() => setGameMessage("Подарок подготовлен — выберите друга в Telegram")}
+          />
         )}
       </div>
 
