@@ -115,6 +115,9 @@ export default function Home() {
   const [showPigsModal, setShowPigsModal] = useState(false)
   const [showLanguageModal, setShowLanguageModal] = useState(false)
   const [purchaseMessage, setPurchaseMessage] = useState("")
+  const [combo, setCombo] = useState(0)
+  const [clickBursts, setClickBursts] = useState<{ id: number; amount: number }[]>([])
+  const [offlineReward, setOfflineReward] = useState(0)
 
   const maxEnergy = getCurrentMaxEnergy(maxEnergyLevel)
   const carrotsPerClick = getCurrentCarrotsPerClick(carrotsPerClickLevel)
@@ -179,6 +182,12 @@ export default function Home() {
     return () => clearInterval(interval)
   }, [autoTapActive, autoTapEndTime, carrotsPerClick])
 
+  useEffect(() => {
+    if (!combo) return
+    const timeout = window.setTimeout(() => setCombo(0), 1800)
+    return () => window.clearTimeout(timeout)
+  }, [combo])
+
   // Booster timer
   useEffect(() => {
     if (!boosterActive) return
@@ -206,11 +215,12 @@ export default function Home() {
     const data = {
       carrots, guineaTokens, telegramStars, miningScore, level, xp, totalClicks, totalCarrotsEarned,
       activePigId, unlockedPigs, playerMiners, carrotsPerClickLevel, maxEnergyLevel,
+      lastSeenAt: Date.now(),
       referralBonus, referralsCount, streakDay, lastDailyClaimDate,
       freeChestNextTime, bossNextTime, bossesDefeated, achievements,
     }
     localStorage.setItem(`gpc_${userId}`, JSON.stringify(data))
-  }, [carrots, guineaTokens, level, xp, totalClicks, totalCarrotsEarned, activePigId, unlockedPigs, playerMiners, carrotsPerClickLevel, maxEnergyLevel, referralBonus, referralsCount, streakDay, lastDailyClaimDate, freeChestNextTime, bossNextTime, bossesDefeated, achievements, isLoading])
+  }, [carrots, guineaTokens, telegramStars, miningScore, level, xp, totalClicks, totalCarrotsEarned, activePigId, unlockedPigs, playerMiners, carrotsPerClickLevel, maxEnergyLevel, referralBonus, referralsCount, streakDay, lastDailyClaimDate, freeChestNextTime, bossNextTime, bossesDefeated, achievements, isLoading])
 
   // Update quests
   useEffect(() => {
@@ -259,6 +269,9 @@ export default function Home() {
         setGuineaTokens(d.guineaTokens || 0)
         setTelegramStars(d.telegramStars || 0)
         setMiningScore(d.miningScore || 0)
+        const awaySeconds = Math.min(8 * 60 * 60, Math.max(0, (Date.now() - (d.lastSeenAt || Date.now())) / 1000))
+        const awayReward = Math.min(500, awaySeconds * ((d.totalIncomePerHour || 0) / 3600))
+        if (awayReward > 0) { setGuineaTokens(p => p + awayReward); setOfflineReward(awayReward) }
         setLevel(d.level || 1)
         setXP(d.xp || 0)
         setTotalClicks(d.totalClicks || 0)
@@ -296,7 +309,13 @@ export default function Home() {
   const handleClick = () => {
     if (energy < 1) return
     const mult = boosterActive ? boosterMultiplier : 1
-    const earned = carrotsPerClick * mult
+    const nextCombo = combo + 1
+    const comboMultiplier = nextCombo >= 50 ? 1.5 : nextCombo >= 20 ? 1.25 : 1
+    const earned = Math.ceil(carrotsPerClick * mult * comboMultiplier)
+    setCombo(nextCombo)
+    const burstId = Date.now()
+    setClickBursts((current) => [...current.slice(-5), { id: burstId, amount: earned }])
+    window.setTimeout(() => setClickBursts((current) => current.filter((burst) => burst.id !== burstId)), 700)
     setCarrots(p => p + earned)
     setTotalCarrotsEarned(p => p + earned)
     setEnergy(p => p - 1)
@@ -537,6 +556,7 @@ export default function Home() {
 
       <div className="container mx-auto px-3 py-4 max-w-2xl">
         {purchaseMessage && <div className="mb-3 rounded-xl border border-green-500/30 bg-green-900/30 px-3 py-2 text-xs text-green-300 text-center" role="status">{purchaseMessage}</div>}
+  {offlineReward > 0 && <div className="mb-3 flex items-center justify-between rounded-xl border border-cyan-400/30 bg-cyan-950/40 px-3 py-2 text-xs text-cyan-200" role="status"><span>Доход за время отсутствия</span><strong>+{offlineReward.toFixed(2)} GT</strong><button className="text-cyan-400" onClick={() => setOfflineReward(0)} aria-label="Закрыть">×</button></div>}
 
         {activeTab === "main" && (
           <div className="space-y-4">
@@ -558,19 +578,29 @@ export default function Home() {
                 )}
               </div>
 
-              <button
-                onClick={handleClick}
-                disabled={energy < 1}
+  <div className="relative mx-auto w-fit">
+  {clickBursts.map((burst) => <span key={burst.id} className="pointer-events-none absolute left-1/2 top-1/2 z-10 text-lg font-black text-yellow-300 game-result-pop">+{burst.amount}</span>)}
+  <button
+  onClick={handleClick}
+  disabled={energy < 1}
+
                 className="w-52 h-52 sm:w-64 sm:h-64 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center active:scale-95 transition-transform disabled:opacity-50 shadow-2xl mx-auto"
               >
                 {activePig && <img src={activePig.icon || "/placeholder.svg"} alt={activePig.name[language]} className="w-4/5 h-4/5 object-contain" />}
-              </button>
-              <div className="flex items-center gap-2 bg-black/30 rounded-full px-3 py-2">
+  </button>
+  </div>
+  <div className="flex items-center justify-between gap-2 bg-black/30 rounded-full px-3 py-2">
+
                 <Zap className="w-4 h-4 text-yellow-400 shrink-0" />
                 <Progress value={(energy / maxEnergy) * 100} className="h-2 flex-1" />
-                <span className="text-xs font-medium">{energy}/{maxEnergy}</span>
-              </div>
-              <p className="text-xs text-gray-400">
+  <span className="text-xs font-medium">{energy}/{maxEnergy}</span>
+  </div>
+  <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
+    <span>+{carrotsPerClick * (boosterActive ? boosterMultiplier : 1)} за тап</span>
+    {combo >= 2 && <span className="rounded-full bg-orange-500/20 px-2 py-0.5 font-bold text-orange-300">Комбо x{combo} {combo >= 50 ? "· бонус 50%" : combo >= 20 ? "· бонус 25%" : ""}</span>}
+  </div>
+  <p className="text-xs text-gray-400">
+
                 +{carrotsPerClick * (boosterActive ? boosterMultiplier : 1)} 🥕 за тап
                 {boosterActive && <span className="text-pink-400 ml-1">(x{boosterMultiplier} буст!)</span>}
               </p>
