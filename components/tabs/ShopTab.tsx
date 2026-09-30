@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { GameIcon } from "@/components/GameIcon"
 
 interface ShopTabProps {
   isPurchasing: boolean
@@ -18,18 +19,18 @@ const GT_PACKS = [
 ]
 
 const ITEMS = [
-  { icon: "🤖", title: "Авто-фермер", detail: "Автоклик на 1 час", price: 25 },
-  { icon: "⚡", title: "Бустер x2", detail: "Доход x2 на 1 час", price: 15 },
-  { icon: "🚀", title: "Бустер x5", detail: "Доход x5 на 15 минут", price: 30 },
-  { icon: "🔋", title: "Полная энергия", detail: "Мгновенное восстановление", price: 10 },
-  { icon: "📺", title: "Без рекламы", detail: "Покупка навсегда", price: 250 },
-  { icon: "🎁", title: "Подарок другу", detail: "Роза или токен в профиль", price: 20 },
+  { icon: "booster" as const, title: "Авто-фермер", detail: "Автоклик на 1 час", price: 25 },
+  { icon: "booster" as const, title: "Бустер x2", detail: "Доход x2 на 1 час", price: 15 },
+  { icon: "booster" as const, title: "Бустер x5", detail: "Доход x5 на 15 минут", price: 30 },
+  { icon: "mining" as const, title: "Полная энергия", detail: "Мгновенное восстановление", price: 10 },
+  { icon: "gt" as const, title: "Без рекламы", detail: "Покупка навсегда", price: 250 },
+  { icon: "carrot" as const, title: "Подарок другу", detail: "Роза или токен в профиль", price: 20 },
 ]
 
 const COSMETICS = [
-  { icon: "🌙", title: "Фон: Ночной город", detail: "Уникальное оформление поля", price: 80 },
-  { icon: "✨", title: "Эффект: Искры", detail: "Красивый эффект каждого тапа", price: 60 },
-  { icon: "🏆", title: "Рамка: Первая эра", detail: "Статус в рейтинге", price: 120 },
+  { icon: "mining" as const, title: "Фон: Ночной город", detail: "Уникальное оформление поля", price: 80 },
+  { icon: "booster" as const, title: "Эффект: Искры", detail: "Красивый эффект каждого тапа", price: 60 },
+  { icon: "gt" as const, title: "Рамка: Первая эра", detail: "Статус в рейтинге", price: 120 },
 ]
 
 export default function ShopTab({ isPurchasing, onBuyGT, guineaTokens, telegramStars, onSpendGT }: ShopTabProps) {
@@ -63,7 +64,7 @@ export default function ShopTab({ isPurchasing, onBuyGT, guineaTokens, telegramS
         <div className="grid grid-cols-2 gap-2">
           {ITEMS.map((item) => (
             <Button key={item.title} variant="outline" onClick={() => buy(item)} disabled={guineaTokens < item.price} className="h-auto min-h-20 p-2 flex flex-col items-start gap-0.5 text-left">
-              <span className="text-lg">{item.icon}</span><span className="text-xs font-semibold text-white">{item.title}</span><span className="text-[10px] text-gray-400">{item.detail}</span><span className="text-[10px] text-yellow-400">{item.price} GT</span>
+              <GameIcon name={item.icon} size={28} /><span className="text-xs font-semibold text-white">{item.title}</span><span className="text-[10px] text-gray-400">{item.detail}</span><span className="text-[10px] text-yellow-400">{item.price} GT</span>
             </Button>
           ))}
         </div>
@@ -74,7 +75,7 @@ export default function ShopTab({ isPurchasing, onBuyGT, guineaTokens, telegramS
         <p className="text-xs text-gray-400 mb-3">Скины, рамки, эффекты и уникальные фоны.</p>
         <div className="grid grid-cols-3 gap-2">
           {COSMETICS.map((item) => (
-            <Button key={item.title} variant="outline" onClick={() => buy(item)} disabled={guineaTokens < item.price} className="h-auto min-h-24 p-2 flex flex-col items-center gap-1 text-center"><span className="text-2xl">{item.icon}</span><span className="text-[10px] font-semibold text-white">{item.title.replace("Фон: ", "").replace("Эффект: ", "").replace("Рамка: ", "")}</span><span className="text-[10px] text-yellow-400">{item.price} GT</span></Button>
+            <Button key={item.title} variant="outline" onClick={() => buy(item)} disabled={guineaTokens < item.price} className="h-auto min-h-24 p-2 flex flex-col items-center gap-1 text-center"><GameIcon name={item.icon} size={36} /><span className="text-[10px] font-semibold text-white">{item.title.replace("Фон: ", "").replace("Эффект: ", "").replace("Рамка: ", "")}</span><span className="text-[10px] text-yellow-400">{item.price} GT</span></Button>
           ))}
         </div>
       </Card>

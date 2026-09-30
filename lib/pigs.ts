@@ -141,7 +141,7 @@ export const MINERS: MinerType[] = [
   {
     id: 1,
     name: { en: "Carrot Farmer", ru: "Морковный фермер", uk: "Морквяний фермер" },
-    icon: "🥕",
+    icon: "/images/icon-carrot.png",
     baseProfit: 0.1,
     baseCost: 5,
     costMultiplier: 2,
