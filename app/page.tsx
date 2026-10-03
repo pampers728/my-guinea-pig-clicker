@@ -42,7 +42,12 @@ function makeDefaultQuests(totalClicks: number, totalCarrots: number): Quest[] {
 
 export default function Home() {
   const tg = useTelegram()
-  const [language, setLanguage] = useState<Language>("en")
+  const [language, setLanguage] = useState<Language>(() => {
+    if (typeof window === "undefined") return "en"
+    const savedLanguage = window.localStorage.getItem("guinea-pig-language")
+    const supported = ["en", "ru", "uk", "kk", "pt", "be", "es", "de", "pl", "fr", "zh", "ja", "ko", "tr"]
+    return supported.includes(savedLanguage ?? "") ? (savedLanguage as Language) : "en"
+  })
   const { t } = useTranslation(language)
 
   // Core resources
@@ -127,11 +132,19 @@ export default function Home() {
   const freeChestAvailable = Date.now() >= freeChestNextTime
   const bossAvailable = Date.now() >= bossNextTime
 
+  // Keep a manually selected language across page refreshes. Telegram's language is only used as the first default.
+  useEffect(() => {
+    window.localStorage.setItem("guinea-pig-language", language)
+  }, [language])
+
   // Init
   useEffect(() => {
-    const userLang = tg.user?.language_code || "en"
-    const supported = ["en", "ru", "uk", "kk", "pt", "be", "es", "de", "pl", "fr", "zh", "ja", "ko", "tr"]
-    setLanguage(supported.includes(userLang) ? (userLang as Language) : "en")
+    const savedLanguage = window.localStorage.getItem("guinea-pig-language")
+    if (!savedLanguage) {
+      const userLang = tg.user?.language_code || "en"
+      const supported = ["en", "ru", "uk", "kk", "pt", "be", "es", "de", "pl", "fr", "zh", "ja", "ko", "tr"]
+      setLanguage(supported.includes(userLang) ? (userLang as Language) : "en")
+    }
     setReferralLink(`https://t.me/GuineaPigClicker_bot?start=${userId}`)
     loadPlayerData()
     const startParam = tg.initDataUnsafe?.start_parameter
