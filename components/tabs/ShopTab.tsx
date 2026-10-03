@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { GameIcon } from "@/components/GameIcon"
+import CryptoPaymentPanel from "@/components/CryptoPaymentPanel"
 
 interface ShopTabProps {
   isPurchasing: boolean
@@ -45,6 +46,8 @@ export default function ShopTab({ isPurchasing, onBuyGT, guineaTokens, telegramS
         <Badge variant="outline">{guineaTokens.toFixed(2)} GT</Badge>
         <Badge variant="outline">{telegramStars} Stars</Badge>
       </div>
+
+      <CryptoPaymentPanel />
 
       <Card className="bg-black/20 border-purple-500/30 p-3">
         <p className="text-sm font-semibold text-white">Игровая валюта</p>
