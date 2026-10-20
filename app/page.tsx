@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Progress } from "@/components/ui/progress"
-import { Zap, Pickaxe, Users, Coins, Crown, HomeIcon, Globe, ShoppingBag, ArrowUpCircle, Gift, Gamepad2, ListTodo, Trophy } from "lucide-react"
+import { Zap, Pickaxe, Users, Coins, Crown, HomeIcon, Globe, ShoppingBag, ArrowUpCircle, Gift, Gamepad2, ListTodo, Trophy, Map } from "lucide-react"
 import { useTelegram } from "@/components/TelegramProvider"
 import { useTranslation, type Language } from "@/lib/i18n"
 import {
@@ -18,6 +18,7 @@ import MinersTab from "@/components/tabs/MinersTab"
 import UpgradesTab from "@/components/tabs/UpgradesTab"
 import BonusesTab from "@/components/tabs/BonusesTab"
 import LeaderboardTab from "@/components/tabs/LeaderboardTab"
+import WorldTab from "@/components/tabs/WorldTab"
 import FriendsTab from "@/components/tabs/FriendsTab"
 import ShopTab from "@/components/tabs/ShopTab"
 import GamesTab from "@/components/tabs/GamesTab"
@@ -112,6 +113,13 @@ export default function Home() {
   // Leaderboard
   const [leaderboard, setLeaderboard] = useState<any[]>([])
   const [leaderboardPeriod, setLeaderboardPeriod] = useState<"daily" | "weekly" | "alltime">("daily")
+
+  // Living world and personal season profile
+  const [factionPower, setFactionPower] = useState(6840)
+  const [personalContribution, setPersonalContribution] = useState(320)
+  const [worldSeason] = useState(1)
+  const [worldDaysLeft] = useState(4)
+  const [heroTitle] = useState("Следопыт морковных земель")
 
   // UI
   const [activeTab, setActiveTab] = useState("main")
@@ -523,6 +531,7 @@ export default function Home() {
     { id: "friends", icon: <Users className="w-5 h-5" />, label: "Друзья" },
     { id: "shop", icon: <ShoppingBag className="w-5 h-5" />, label: "Магазин" },
     { id: "leaderboard", icon: <Crown className="w-5 h-5" />, label: "Топ" },
+    { id: "world", icon: <Map className="w-5 h-5" />, label: "Мир" },
   ]
 
   const freeChestMinutes = Math.ceil(Math.max(0, freeChestNextTime - Date.now()) / 60000)
@@ -693,6 +702,26 @@ export default function Home() {
         {activeTab === "leaderboard" && (
           <LeaderboardTab leaderboard={leaderboard} leaderboardPeriod={leaderboardPeriod}
             onPeriodChange={(p) => { setLeaderboardPeriod(p); loadLeaderboard(p) }} />
+        )}
+
+        {activeTab === "world" && (
+          <WorldTab
+            factionName="Союз Золотой Моркови"
+            factionPower={factionPower}
+            personalContribution={personalContribution}
+            activeTerritory="Долина урожая"
+            season={worldSeason}
+            seasonDaysLeft={worldDaysLeft}
+            title={heroTitle}
+            territories={[
+              { name: "Долина урожая", status: "open", reward: "+10% к доходу майнеров", control: 68 },
+              { name: "Пещеры кристаллов", status: "raid", reward: "Артефакт сезона", control: 42 },
+              { name: "Лунный питомник", status: "locked", reward: "Новый тип экспедиции", control: 0 },
+              { name: "Башня аирдропа", status: "locked", reward: "Увеличенный вес snapshot", control: 0 },
+            ]}
+            onJoinExpedition={() => { setFactionPower((value) => value + 250); setPersonalContribution((value) => value + 25); setPurchaseMessage("Экспедиция начата: вклад засчитан в битву фракций") }}
+            onSupportFaction={() => { setFactionPower((value) => value + 100); setPersonalContribution((value) => value + 10); setPurchaseMessage("Твой вклад усилил фракцию") }}
+          />
         )}
       </div>
 
