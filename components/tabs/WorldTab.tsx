@@ -38,11 +38,12 @@ export default function WorldTab({ factionName, factionPower, personalContributi
   return (
     <div className="overflow-hidden rounded-[26px] border border-white/10 bg-[#10131c] text-white shadow-2xl">
       <div className="relative min-h-[650px] overflow-hidden bg-[#7c6445] sm:min-h-[720px]">
-        <div className="absolute inset-0 opacity-90 [background-image:radial-gradient(circle_at_10%_20%,rgba(255,218,147,.34)_0_2%,transparent_2.5%),radial-gradient(circle_at_80%_30%,rgba(53,77,48,.52)_0_14%,transparent_14.5%),radial-gradient(circle_at_34%_70%,rgba(58,79,52,.55)_0_17%,transparent_17.5%),linear-gradient(135deg,#9a805c_0%,#6b634c_48%,#8c704e_100%)]" />
-        <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(24deg,transparent_45%,rgba(255,230,165,.24)_46%,transparent_48%),linear-gradient(114deg,transparent_46%,rgba(46,39,29,.22)_47%,transparent_49%)] [background-size:85px_65px,120px_90px]" />
-        <div className="absolute left-[21%] top-[17%] h-24 w-44 rotate-[-12deg] rounded-full bg-[#b7a574]/50 blur-sm" />
-        <div className="absolute right-[18%] top-[40%] h-32 w-52 rotate-[14deg] rounded-full bg-[#3e694d]/55 blur-sm" />
-        <div className="absolute bottom-[13%] left-[37%] h-20 w-48 rotate-[-7deg] rounded-full bg-[#d1a46a]/50 blur-sm" />
+        <div className="absolute inset-0 bg-[#4a4034] bg-[url('/images/morkvard-harbor.png')] bg-cover bg-center" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#15202b]/45 via-transparent to-[#10131c]/75" />
+<div className="absolute inset-x-[12%] top-[25%] h-px bg-gradient-to-r from-transparent via-amber-100/40 to-transparent" />
+        <div className="absolute left-[31%] top-[48%] z-10 flex items-center gap-1 rounded-full bg-black/40 px-2 py-1 text-[9px] font-bold text-white shadow-lg"><span className="grid size-5 place-items-center rounded-full bg-[#9b6748] text-[8px]">M</span> Mira · healer</div>
+        <div className="absolute right-[28%] top-[34%] z-10 flex items-center gap-1 rounded-full bg-black/40 px-2 py-1 text-[9px] font-bold text-white shadow-lg"><span className="grid size-5 place-items-center rounded-full bg-[#5d4a70] text-[8px]">K</span> Kiro · scout</div>
+        <div className="absolute left-[58%] top-[68%] z-10 flex items-center gap-1 rounded-full bg-black/40 px-2 py-1 text-[9px] font-bold text-white shadow-lg"><span className="grid size-5 place-items-center rounded-full bg-[#475b48] text-[8px]">D</span> Digger · miner</div>
 
         <header className="absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-2 bg-gradient-to-b from-black/75 to-transparent p-3 sm:p-4">
           <div className="flex items-center gap-2 rounded-full border border-white/20 bg-black/55 px-2 py-1.5 backdrop-blur-md">
