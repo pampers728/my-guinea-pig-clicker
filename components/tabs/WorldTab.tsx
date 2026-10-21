@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import MmoClient from "@/components/mmo/MmoClient"
 import { Backpack, Castle, ChevronRight, Crosshair, Crown, Gem, Heart, Map, MessageCircle, Moon, MoreHorizontal, Move, Navigation, Radio, ScrollText, Shield, Sparkles, Swords, Target, Users, Zap } from "lucide-react"
 
 type Territory = { name: string; status: "open" | "raid" | "locked"; reward: string; control: number }
@@ -37,6 +38,7 @@ export default function WorldTab({ factionName, factionPower, personalContributi
 
   return (
     <div className="overflow-hidden rounded-[26px] border border-white/10 bg-[#10131c] text-white shadow-2xl">
+      <MmoClient />
       <div className="relative min-h-[650px] overflow-hidden bg-[#7c6445] sm:min-h-[720px]">
         <div className="absolute inset-0 bg-[#4a4034] bg-[url('/images/morkvard-harbor.png')] bg-cover bg-center" />
         <div className="absolute inset-0 bg-gradient-to-b from-[#15202b]/45 via-transparent to-[#10131c]/75" />
