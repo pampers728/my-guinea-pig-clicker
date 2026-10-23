@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
       currentEnergy,
       acceptedTerms,
       playerMiners,
+      taskProgress,
     } = data
 
     if (!userId) {
@@ -55,6 +56,7 @@ export async function POST(req: NextRequest) {
         max_energy_level: maxEnergyLevel || 1,
         current_energy: currentEnergy || 1000,
         terms_accepted: acceptedTerms || false,
+        task_progress: taskProgress || {},
         last_online: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
