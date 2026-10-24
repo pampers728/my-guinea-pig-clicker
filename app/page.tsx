@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Progress } from "@/components/ui/progress"
 import { Zap, Pickaxe, Users, Coins, Crown, HomeIcon, Globe, ShoppingBag, ArrowUpCircle, Gift, Gamepad2, ListTodo, Trophy, Map } from "lucide-react"
 import { useTelegram } from "@/components/TelegramProvider"
+import { requestGameFullscreen, exitGameFullscreen } from "@/lib/game/fullscreen"
 import { useTranslation, type Language } from "@/lib/i18n"
 import {
   PIGS, getPigById, calculateXPNeeded, getLevelRewards,
@@ -131,12 +132,32 @@ export default function Home() {
   const [combo, setCombo] = useState(0)
   const [clickBursts, setClickBursts] = useState<{ id: number; amount: number }[]>([])
   const [offlineReward, setOfflineReward] = useState(0)
+  const [isGameMode, setIsGameMode] = useState(false)
+  const [isEnteringGame, setIsEnteringGame] = useState(false)
 
   const maxEnergy = getCurrentMaxEnergy(maxEnergyLevel)
   const carrotsPerClick = getCurrentCarrotsPerClick(carrotsPerClickLevel)
   const xpNeeded = calculateXPNeeded(level)
   const totalIncomePerHour = playerMiners.reduce((sum, pm) => sum + getMinerProfit(pm.miner_type, pm.level), 0) * (1 + referralBonus / 100)
   const userId = tg.user?.id ? String(tg.user.id) : "guest"
+  const enterGame = async () => {
+    if (isEnteringGame || isGameMode) return
+    setIsEnteringGame(true)
+    setActiveTab("world")
+    try { await requestGameFullscreen(tg) } catch { /* Expanded window mode remains available. */ }
+    setIsGameMode(true)
+    setIsEnteringGame(false)
+  }
+  const leaveGame = async () => {
+    setIsGameMode(false)
+    await exitGameFullscreen(tg)
+    setActiveTab("main")
+  }
+  useEffect(() => {
+    const onVisibility = () => { if (document.hidden) window.dispatchEvent(new Event("blur")) }
+    document.addEventListener("visibilitychange", onVisibility)
+    return () => document.removeEventListener("visibilitychange", onVisibility)
+  }, [])
   const freeChestAvailable = Date.now() >= freeChestNextTime
   const bossAvailable = Date.now() >= bossNextTime
 
@@ -537,9 +558,9 @@ export default function Home() {
   const freeChestMinutes = Math.ceil(Math.max(0, freeChestNextTime - Date.now()) / 60000)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white pb-36">
+    <div className={isGameMode ? "min-h-screen overflow-hidden bg-[#10131c] text-white" : "min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white pb-36"}>
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-black/40 backdrop-blur-md border-b border-purple-500/30 p-2">
+      <div className={`${isGameMode ? "hidden" : ""} sticky top-0 z-10 bg-black/40 backdrop-blur-md border-b border-purple-500/30 p-2`}>
         <div className="container mx-auto flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 flex-wrap">
             <div className="flex items-center gap-1 bg-black/30 rounded-full px-2 py-1 text-xs">
@@ -576,7 +597,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="container mx-auto px-3 py-4 max-w-2xl">
+      <div className={isGameMode ? "fixed inset-0 z-[60] h-[100dvh] w-screen p-0" : "container mx-auto max-w-2xl px-3 py-4"}>
         {purchaseMessage && <div className="mb-3 rounded-xl border border-green-500/30 bg-green-900/30 px-3 py-2 text-xs text-green-300 text-center" role="status">{purchaseMessage}</div>}
   {offlineReward > 0 && <div className="mb-3 flex items-center justify-between rounded-xl border border-cyan-400/30 bg-cyan-950/40 px-3 py-2 text-xs text-cyan-200" role="status"><span>Доход за время отсутствия</span><strong>+{offlineReward.toFixed(2)} GT</strong><button className="text-cyan-400" onClick={() => setOfflineReward(0)} aria-label="Закрыть">×</button></div>}
 
@@ -721,12 +742,15 @@ export default function Home() {
             ]}
             onJoinExpedition={() => { setFactionPower((value) => value + 250); setPersonalContribution((value) => value + 25); setPurchaseMessage("Экспедиция начата: вклад засчитан в битву фракций") }}
             onSupportFaction={() => { setFactionPower((value) => value + 100); setPersonalContribution((value) => value + 10); setPurchaseMessage("Твой вклад усилил фракцию") }}
+            fullscreen={isGameMode}
+            onEnterGame={enterGame}
+            onExitGame={leaveGame}
           />
         )}
       </div>
 
       {/* Bottom nav — two rows of 5 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-md border-t border-purple-500/30">
+      <div className={`${isGameMode ? "hidden" : ""} fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-md border-t border-purple-500/30`}>
         <div className="max-w-2xl mx-auto px-1 py-1 space-y-0.5">
           {[TABS.slice(0, 5), TABS.slice(5)].map((row, rowIdx) => (
             <div key={rowIdx} className="flex justify-around">

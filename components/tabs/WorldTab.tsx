@@ -8,7 +8,7 @@ import MmoClient from "@/components/mmo/MmoClient"
 import { Backpack, Castle, ChevronRight, Crosshair, Crown, Gem, Heart, Map, MessageCircle, Moon, MoreHorizontal, Move, Navigation, Radio, ScrollText, Shield, Sparkles, Swords, Target, Users, Zap } from "lucide-react"
 
 type Territory = { name: string; status: "open" | "raid" | "locked"; reward: string; control: number }
-type WorldTabProps = { factionName: string; factionPower: number; personalContribution: number; activeTerritory: string; onJoinExpedition: () => void; onSupportFaction: () => void; season: number; seasonDaysLeft: number; title: string; territories: Territory[] }
+type WorldTabProps = { factionName: string; factionPower: number; personalContribution: number; activeTerritory: string; onJoinExpedition: () => void; onSupportFaction: () => void; season: number; seasonDaysLeft: number; title: string; territories: Territory[]; fullscreen: boolean; onEnterGame: () => void; onExitGame: () => void }
 
 const chat = [
   ["Mira", "Северный мост открыт!"],
@@ -23,7 +23,7 @@ const zones = [
   { name: "Бурый перевал", x: "58%", y: "79%", icon: Shield, tone: "text-red-200" },
 ]
 
-export default function WorldTab({ factionName, factionPower, personalContribution, onJoinExpedition, onSupportFaction, season, seasonDaysLeft, title }: WorldTabProps) {
+export default function WorldTab({ factionName, factionPower, personalContribution, onJoinExpedition, onSupportFaction, season, seasonDaysLeft, title, fullscreen, onEnterGame, onExitGame }: WorldTabProps) {
   const [selectedZone, setSelectedZone] = useState("Кристальный рифт")
   const [notice, setNotice] = useState("")
   const [hp, setHp] = useState(78)
@@ -37,9 +37,10 @@ export default function WorldTab({ factionName, factionPower, personalContributi
   }
 
   return (
-    <div className="overflow-hidden rounded-[26px] border border-white/10 bg-[#10131c] text-white shadow-2xl">
-      <MmoClient />
-      <div className="relative min-h-[650px] overflow-hidden bg-[#7c6445] sm:min-h-[720px]">
+    <div className={fullscreen ? "fixed inset-0 z-[70] h-[100dvh] w-screen overflow-hidden bg-[#10131c] text-white" : "overflow-hidden rounded-[26px] border border-white/10 bg-[#10131c] text-white shadow-2xl"}>
+      {!fullscreen && <div className="flex items-center justify-between border-b border-white/10 bg-black/30 px-4 py-3"><div><p className="text-sm font-black text-amber-100">Мир The Great Burrow War</p><p className="text-[10px] text-slate-400">Морковный порт · первая игровая зона</p></div><Button type="button" onClick={onEnterGame} className="bg-amber-600 text-xs font-black hover:bg-amber-500">Играть</Button></div>}
+      {fullscreen && <MmoClient fullscreen onExit={onExitGame} />}
+      {!fullscreen && <div className="relative min-h-[650px] overflow-hidden bg-[#7c6445] sm:min-h-[720px]">
         <div className="absolute inset-0 bg-[#4a4034] bg-[url('/images/morkvard-harbor.png')] bg-cover bg-center" />
         <div className="absolute inset-0 bg-gradient-to-b from-[#15202b]/45 via-transparent to-[#10131c]/75" />
 <div className="absolute inset-x-[12%] top-[25%] h-px bg-gradient-to-r from-transparent via-amber-100/40 to-transparent" />
@@ -73,10 +74,10 @@ export default function WorldTab({ factionName, factionPower, personalContributi
         <div className="absolute bottom-[112px] right-3 z-20 flex gap-1 rounded-xl border border-white/15 bg-black/50 p-1.5 backdrop-blur-md sm:bottom-28 sm:right-5"><Button size="icon" variant="ghost" onClick={() => act("Инвентарь открыт")} className="size-9 text-amber-100 hover:bg-white/15"><Backpack className="size-4" /></Button><Button size="icon" variant="ghost" onClick={() => act("Гильдия открыта")} className="size-9 text-amber-100 hover:bg-white/15"><Users className="size-4" /></Button><Button size="icon" variant="ghost" onClick={() => act("Квесты открыты")} className="size-9 text-amber-100 hover:bg-white/15"><ScrollText className="size-4" /></Button></div>
 
         {notice && <div className="absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-1/2 rounded-xl border border-amber-200/40 bg-black/75 px-4 py-3 text-center text-xs font-bold text-amber-100 shadow-2xl backdrop-blur-md" role="status">{notice}</div>}
-      </div>
+      </div>}
 
-      <div className="grid grid-cols-2 gap-2 border-t border-white/10 bg-[#151925] p-3 text-xs sm:grid-cols-4"><div className="rounded-xl border border-white/10 bg-white/[.03] p-2"><p className="text-[9px] uppercase tracking-wider text-slate-500">Локация</p><p className="mt-1 truncate font-bold text-amber-100">{selectedZone}</p></div><div className="rounded-xl border border-white/10 bg-white/[.03] p-2"><p className="text-[9px] uppercase tracking-wider text-slate-500">HP / энергия</p><p className="mt-1 font-bold text-red-200">{hp}% <span className="text-cyan-200">/ {energy}%</span></p></div><div className="rounded-xl border border-white/10 bg-white/[.03] p-2"><p className="text-[9px] uppercase tracking-wider text-slate-500">Личный вклад</p><p className="mt-1 font-bold text-amber-200">{personalContribution.toLocaleString()}</p></div><Button onClick={() => act("Экспедиция начата", onJoinExpedition)} className="h-auto min-h-12 rounded-xl bg-amber-600 text-xs font-black hover:bg-amber-500"><Navigation className="mr-1 size-4" /> В экспедицию</Button></div>
-      <div className="flex items-center justify-between border-t border-white/10 bg-[#0e1119] px-3 py-2 text-[10px] text-slate-400"><span className="flex items-center gap-1"><Radio className="size-3 text-emerald-300" /> Мир онлайн · 1 284 игрока</span><button type="button" onClick={() => act("Глобальная карта синхронизируется")}>Синхронизировать <ChevronRight className="inline size-3" /></button></div>
+      {!fullscreen && <div className="grid grid-cols-2 gap-2 border-t border-white/10 bg-[#151925] p-3 text-xs sm:grid-cols-4"><div className="rounded-xl border border-white/10 bg-white/[.03] p-2"><p className="text-[9px] uppercase tracking-wider text-slate-500">Локация</p><p className="mt-1 truncate font-bold text-amber-100">{selectedZone}</p></div><div className="rounded-xl border border-white/10 bg-white/[.03] p-2"><p className="text-[9px] uppercase tracking-wider text-slate-500">HP / энергия</p><p className="mt-1 font-bold text-red-200">{hp}% <span className="text-cyan-200">/ {energy}%</span></p></div><div className="rounded-xl border border-white/10 bg-white/[.03] p-2"><p className="text-[9px] uppercase tracking-wider text-slate-500">Личный вклад</p><p className="mt-1 font-bold text-amber-200">{personalContribution.toLocaleString()}</p></div><Button onClick={() => act("Экспедиция начата", onJoinExpedition)} className="h-auto min-h-12 rounded-xl bg-amber-600 text-xs font-black hover:bg-amber-500"><Navigation className="mr-1 size-4" /> В экспедицию</Button></div>}
+      {!fullscreen && <div className="flex items-center justify-between border-t border-white/10 bg-[#0e1119] px-3 py-2 text-[10px] text-slate-400"><span className="flex items-center gap-1"><Radio className="size-3 text-emerald-300" /> Мир онлайн · 1 284 игрока</span><button type="button" onClick={() => act("Глобальная карта синхронизируется")}>Синхронизировать <ChevronRight className="inline size-3" /></button></div>}
     </div>
   )
 }

@@ -9,6 +9,8 @@ type WebAppApi = {
   user?: any
   ready: () => void
   expand: () => void
+  requestFullscreen?: () => Promise<boolean>
+  exitFullscreen?: () => Promise<boolean>
   close: () => void
   sendData: (payload: any) => void
 }
@@ -90,6 +92,14 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         user: WebApp.initDataUnsafe?.user || { id: Date.now(), first_name: "Player" },
         ready: () => WebApp.ready?.(),
         expand: () => WebApp.expand?.(),
+        requestFullscreen: async () => {
+          try { if (typeof WebApp.requestFullscreen !== "function") return false; await WebApp.requestFullscreen(); return WebApp.isFullscreen === true }
+          catch { return false }
+        },
+        exitFullscreen: async () => {
+          try { if (typeof WebApp.exitFullscreen !== "function") return false; await WebApp.exitFullscreen(); return WebApp.isFullscreen !== true }
+          catch { return false }
+        },
         close: () => WebApp.close?.(),
         sendData: (payload: any) => {
           try {
