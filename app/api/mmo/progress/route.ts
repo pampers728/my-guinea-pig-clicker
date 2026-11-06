@@ -41,13 +41,12 @@ export async function POST(request: NextRequest) {
     const currentProgress: MmoProgress = { inventory: Array.isArray(current.inventory) ? current.inventory.filter((item): item is string => typeof item === "string").slice(0, 100) : [], chestOpen: current.chestOpen === true }
 
     if (body.action === "load") return NextResponse.json({ ok: true, progress: currentProgress })
-    if (body.action === "open_chest") {
-      if (currentProgress.chestOpen) return NextResponse.json({ ok: true, progress: currentProgress, alreadyClaimed: true })
-      const next = { inventory: [...currentProgress.inventory, "Лесной амулет"], chestOpen: true }
-      const { error } = await supabaseAdmin.from("players").update({ task_progress: { ...taskProgress, mmo: next }, updated_at: new Date().toISOString() }).eq("user_id", userId)
-      if (error) return responseError("Progress unavailable", 503)
-      return NextResponse.json({ ok: true, progress: next, claimed: true })
-    }
+  if (body.action === "open_chest") {
+    const { data, error } = await supabaseAdmin.rpc("claim_mmo_chest", { p_user_id: userId })
+    if (error || !data?.progress) return responseError("Progress unavailable", 503)
+    const progress = data.progress as MmoProgress
+    return NextResponse.json({ ok: true, progress, claimed: data.claimed === true, alreadyClaimed: data.alreadyClaimed === true })
+  }
     if (body.action === "save") {
       const next: MmoProgress = { inventory: currentProgress.inventory, chestOpen: currentProgress.chestOpen }
       const { error } = await supabaseAdmin.from("players").update({ task_progress: { ...taskProgress, mmo: next }, updated_at: new Date().toISOString() }).eq("user_id", userId)
