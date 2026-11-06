@@ -6,6 +6,7 @@ import { createContext, useContext, useEffect, useState } from "react"
 type WebAppApi = {
   isAvailable: boolean
   initDataUnsafe?: any
+  initData?: string
   user?: any
   ready: () => void
   expand: () => void
@@ -18,6 +19,7 @@ type WebAppApi = {
 const defaultApi: WebAppApi = {
   isAvailable: false,
   initDataUnsafe: undefined,
+  initData: undefined,
   user: undefined,
   ready: () => {},
   expand: () => {},
@@ -89,6 +91,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const apiObj: WebAppApi = {
         isAvailable: isInTelegram,
         initDataUnsafe: WebApp.initDataUnsafe || {},
+        initData: WebApp.initData || "",
         user: WebApp.initDataUnsafe?.user || { id: Date.now(), first_name: "Player" },
         ready: () => WebApp.ready?.(),
         expand: () => WebApp.expand?.(),
